@@ -1,0 +1,29 @@
+# Example: .github/workflows/backend-ci.yaml
+name: Backend CI
+on:
+  push:
+    branches: [main]
+    paths: 
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yaml'
+
+jobs:
+  test-services:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [apigate, AuthenticationService, UserManagementService]
+    
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test ${{ matrix.service }}
+        run: |
+          cd backend/${{ matrix.service }}
+          dotnet test
+
+        # In backend-ci.yaml
+      - name: Code Analysis
+        run: |
+          dotnet format --verify-no-changes --verbosity diagnostic
+          dotnet tool install -g SecurityCodeScan
+          scs /backend/${{ matrix.service }}

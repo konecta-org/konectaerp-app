@@ -1,0 +1,19 @@
+# .github/workflows/deploy-infra.yml
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'infra/**'
+
+jobs:
+  terraform:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: hashicorp/setup-terraform@v3
+    - run: cd infra && terraform init
+    - run: cd infra && terraform apply -auto-approve
+      env:
+        GCLOUD_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
