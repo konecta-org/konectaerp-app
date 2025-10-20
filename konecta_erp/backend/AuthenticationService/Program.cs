@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using AuthenticationService.Data;
+using AuthenticationService.Models;
 using AuthenticationService.Services;
-using Consul;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,22 +17,22 @@ builder.Services.AddEndpointsApiExplorer();
 // Swagger Configuration with JWT
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo 
-    { 
-        Title = "Konecta ERP - Authentication Service", 
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Konecta ERP - Authentication Service",
         Version = "v1",
-        Description = "Authentication and Authorization Service for Konecta ERP System"
+        Description = "Authentication and Authorization API for Konecta ERP System"
     });
-    
+
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token",
+        Description = "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-    
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -48,9 +49,21 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Database Configuration - PostgreSQL
-builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Database Configuration - SQL Server
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Identity Configuration
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+})
+.AddEntityFrameworkStores<AppDbContext>()
+.AddDefaultTokenProviders();
 
 // JWT Configuration
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -78,17 +91,6 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Register Services
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IJwtService, JwtService>();
-
-// Consul Configuration
-builder.Services.AddSingleton<IConsulClient, ConsulClient>(p => new ConsulClient(consulConfig =>
-{
-    var address = builder.Configuration["Consul:Host"];
-    consulConfig.Address = new Uri(address ?? "http://localhost:8500");
-}));
-
 // CORS Configuration
 builder.Services.AddCors(options =>
 {
@@ -99,6 +101,9 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
+
+builder.Services.AddScoped<IJwtService, JwtService>();
+
 
 var app = builder.Build();
 
@@ -114,38 +119,5 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
-// Register with Consul
-var consulClient = app.Services.GetRequiredService<IConsulClient>();
-var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
-var serviceName = "authentication-service";
-var serviceId = $"{serviceName}-{Guid.NewGuid()}";
-
-lifetime.ApplicationStarted.Register(() =>
-{
-    var registration = new AgentServiceRegistration
-    {
-        ID = serviceId,
-        Name = serviceName,
-        Address = builder.Configuration["ServiceConfig:Host"] ?? "localhost",
-        Port = int.Parse(builder.Configuration["ServiceConfig:Port"] ?? "5001"),
-        Check = new AgentServiceCheck
-        {
-            HTTP = $"http://{builder.Configuration["ServiceConfig:Host"] ?? "localhost"}:{builder.Configuration["ServiceConfig:Port"] ?? "5001"}/health",
-            Interval = TimeSpan.FromSeconds(10),
-            Timeout = TimeSpan.FromSeconds(5)
-        }
-    };
-    
-    consulClient.Agent.ServiceRegister(registration).Wait();
-});
-
-lifetime.ApplicationStopping.Register(() =>
-{
-    consulClient.Agent.ServiceDeregister(serviceId).Wait();
-});
-
-// Health Check Endpoint
-app.MapGet("/health", () => Results.Ok(new { status = "Healthy", service = serviceName }));
 
 app.Run();
