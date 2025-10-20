@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AuthenticationService.Dtos;
 using AuthenticationService.Models;
 using AuthenticationService.Services;
@@ -59,5 +60,17 @@ namespace AuthenticationService.Controllers
             var token = _jwtService.GenerateToken(user);
             return Ok(new { token });
         }
+
+        [HttpPost("validate-token")]
+        public IActionResult ValidateToken([FromBody] string token)
+        {
+           var principal = _jwtService.ValidateToken(token);
+            if (principal == null)
+               return Unauthorized("Invalid or expired token.");
+
+           var email = principal.FindFirst(ClaimTypes.Email)?.Value;
+              return Ok(new { message = "Token is valid", email });
+        }
+
     }
 }

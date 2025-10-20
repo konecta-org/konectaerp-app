@@ -39,5 +39,33 @@ namespace AuthenticationService.Services
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+        public ClaimsPrincipal? ValidateToken(string token)
+        {
+            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!);
+
+            try
+            {
+                var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidAudience = jwtSettings["Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ClockSkew = TimeSpan.Zero // removes default 5-min tolerance
+                }, out _);
+
+                return principal;
+            }
+            catch
+            {
+                return null; // invalid token
+            }
+        }
     }
 }
