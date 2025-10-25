@@ -1,1 +1,64 @@
+# ================================================
+# OS & IDE files
+# ================================================
+.vscode/
+.vs/
+.idea/
+*.code-workspace
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ================================================
+# Build artifacts
+# ================================================
+bin/
+obj/
+out/
+Debug/
+Release/
+[Bb]uild/
+[Bb]in/
+[Oo]bj/
+
+
+
+# ================================================
+# Environment & Secrets
+# ================================================
 .env
+.env.*
+appsettings.*.json
+appsettings.Development.json
+secrets.json
+
+# ================================================
+# Dependency folders
+# ================================================
+node_modules/
+packages/
+bower_components/
+
+# ================================================
+# Containers & cloud
+# ================================================
+*.dockerignore
+docker-compose.override.yml
+*.iml
+
+# ================================================
+# Compiled binaries
+# ================================================
+*.dll
+*.exe
+*.cache
+*.pdb
+*.mdb
+*.obj
+*.log
+*.db
+*.db-shm
+*.db-wal
+*.lock
+

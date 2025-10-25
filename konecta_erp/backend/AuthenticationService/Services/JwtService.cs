@@ -57,14 +57,14 @@ namespace AuthenticationService.Services
                     ValidIssuer = jwtSettings["Issuer"],
                     ValidAudience = jwtSettings["Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ClockSkew = TimeSpan.Zero // removes default 5-min tolerance
+                    ClockSkew = TimeSpan.Zero 
                 }, out _);
 
                 return principal;
             }
             catch
             {
-                return null; // invalid token
+                return null; 
             }
         }
     }
