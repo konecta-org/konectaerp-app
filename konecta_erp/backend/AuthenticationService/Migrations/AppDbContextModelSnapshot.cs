@@ -41,6 +41,9 @@ namespace AuthenticationService.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("FullName")
                         .HasColumnType("nvarchar(max)");
 

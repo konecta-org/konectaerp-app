@@ -1,12 +1,14 @@
+using AuthenticationService.BackgroundServices;
+using AuthenticationService.Data;
+using AuthenticationService.Messaging;
+using AuthenticationService.Models;
+using AuthenticationService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using AuthenticationService.Data;
-using AuthenticationService.Models;
-using AuthenticationService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,13 +26,18 @@ builder.Services.AddSwaggerGen(c =>
         Description = "Authentication and Authorization API for Konecta ERP System"
     });
 
+    // Prefer HTTPS server to avoid auth header loss on HTTP->HTTPS redirects
+    c.AddServer(new OpenApiServer { Url = "https://localhost:7280" });
+    c.AddServer(new OpenApiServer { Url = "http://localhost:5099" });
+
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'",
+        Description = "JWT Authorization header using the Bearer scheme. Paste only the token; Swagger prefixes it.",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -76,6 +83,8 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    options.RequireHttpsMetadata = false; // dev
+    options.IncludeErrorDetails = true;   // surface error in WWW-Authenticate
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -86,6 +95,25 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
         ClockSkew = TimeSpan.Zero
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine($"JWT auth failed: {context.Exception.Message}");
+            return Task.CompletedTask;
+        },
+        OnChallenge = context =>
+        {
+            Console.WriteLine($"JWT challenge: Error={context.Error}, Desc={context.ErrorDescription}");
+            return Task.CompletedTask;
+        },
+        OnMessageReceived = context =>
+        {
+            var hasAuth = context.Request.Headers.ContainsKey("Authorization");
+            Console.WriteLine($"JWT message received. Has Authorization header: {hasAuth}");
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -103,6 +131,12 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
+builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
+builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
+builder.Services.AddSingleton<IEventPublisher, RabbitMqPublisher>();
+builder.Services.AddHostedService<EmployeeCreatedConsumer>();
 
 
 var app = builder.Build();

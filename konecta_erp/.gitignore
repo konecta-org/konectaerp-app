@@ -22,16 +22,37 @@ Release/
 [Bb]in/
 [Oo]bj/
 
-
+# ================================================
+# Compiled binaries
+# ================================================
+*.dll
+*.exe
+*.cache
+*.pdb
+*.mdb
+*.obj
+*.log
+*.db
+*.db-shm
+*.db-wal
+*.lock
 
 # ================================================
 # Environment & Secrets
 # ================================================
+# Ignore global or local environment files
 .env
 .env.*
+
+# Keep environment configs shared between developers
+!appsettings.Development.json
+!appsettings.Production.json
+!launchSettings.json
+
+# Ignore other appsettings files (e.g., appsettings.Staging.json, appsettings.Test.json, etc.)
 appsettings.*.json
-appsettings.Development.json
-secrets.json
+!appsettings.Development.json
+!appsettings.Production.json
 
 # ================================================
 # Dependency folders
@@ -48,17 +69,21 @@ docker-compose.override.yml
 *.iml
 
 # ================================================
-# Compiled binaries
+# Python (for ML/NLP parts if used)
 # ================================================
-*.dll
-*.exe
-*.cache
-*.pdb
-*.mdb
-*.obj
-*.log
-*.db
-*.db-shm
-*.db-wal
-*.lock
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
 
+# ================================================
+# Others
+# ================================================
+*.bak
+*.swp
+*.swn
+*.swo
+*.orig

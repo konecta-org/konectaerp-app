@@ -1,11 +1,12 @@
+using Consul;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using UserManagementService.Data;
-using UserManagementService.Services;
-using Consul;
+using UserManagementService.BackgroundServices;
+using UserManagementService.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,9 +78,9 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("HRManager", policy => policy.RequireRole("Admin", "HR_Manager"));
 });
 
-// Register Services
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
+builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
+builder.Services.AddHostedService<UserAccountEventsConsumer>();
 
 // Consul Configuration
 builder.Services.AddSingleton<IConsulClient, ConsulClient>(p => new ConsulClient(consulConfig =>
