@@ -1,151 +1,59 @@
-using Consul;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using System.Text;
+using UserManagementService.Consumers;
 using UserManagementService.Data;
-using UserManagementService.BackgroundServices;
-using UserManagementService.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-// Swagger Configuration with JWT
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=usermanagement.db"));
+
+builder.Services.AddMassTransit(x =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo 
-    { 
-        Title = "Konecta ERP - User Management Service", 
-        Version = "v1",
-        Description = "User and Role Management Service for Konecta ERP System"
-    });
-    
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    x.AddConsumer<UserCreatedConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
     {
-        Description = "JWT Authorization header using the Bearer scheme",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
-    });
-    
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+        var rabbitHost = builder.Configuration["RabbitMq:Host"] ?? "localhost";
+        var rabbitUser = builder.Configuration["RabbitMq:Username"];
+        var rabbitPass = builder.Configuration["RabbitMq:Password"];
+
+        cfg.Host(rabbitHost, "/", h =>
         {
-            new OpenApiSecurityScheme
+            if (!string.IsNullOrWhiteSpace(rabbitUser) && !string.IsNullOrWhiteSpace(rabbitPass))
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
+                h.Username(rabbitUser);
+                h.Password(rabbitPass);
+            }
+        });
+
+        cfg.ReceiveEndpoint("user-created-queue", e =>
+        {
+            e.ConfigureConsumer<UserCreatedConsumer>(context);
+        });
     });
 });
 
-// Database Configuration - PostgreSQL
-builder.Services.AddDbContext<UserDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// JWT Authentication Configuration
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured");
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
-    };
-});
-
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("HRManager", policy => policy.RequireRole("Admin", "HR_Manager"));
-});
-
-builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
-builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
-builder.Services.AddHostedService<UserAccountEventsConsumer>();
-
-// Consul Configuration
-builder.Services.AddSingleton<IConsulClient, ConsulClient>(p => new ConsulClient(consulConfig =>
-{
-    var address = builder.Configuration["Consul:Host"];
-    consulConfig.Address = new Uri(address ?? "http://localhost:8500");
-}));
-
-// CORS Configuration
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-app.UseCors("AllowAll");
-app.UseAuthentication();
-app.UseAuthorization();
 app.MapControllers();
 
-// Register with Consul
-var consulClient = app.Services.GetRequiredService<IConsulClient>();
-var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
-var serviceName = "user-management-service";
-var serviceId = $"{serviceName}-{Guid.NewGuid()}";
-
-lifetime.ApplicationStarted.Register(() =>
+using (var scope = app.Services.CreateScope())
 {
-    var registration = new AgentServiceRegistration
-    {
-        ID = serviceId,
-        Name = serviceName,
-        Address = builder.Configuration["ServiceConfig:Host"] ?? "localhost",
-        Port = int.Parse(builder.Configuration["ServiceConfig:Port"] ?? "5002"),
-        Check = new AgentServiceCheck
-        {
-            HTTP = $"http://{builder.Configuration["ServiceConfig:Host"] ?? "localhost"}:{builder.Configuration["ServiceConfig:Port"] ?? "5002"}/health",
-            Interval = TimeSpan.FromSeconds(10),
-            Timeout = TimeSpan.FromSeconds(5)
-        }
-    };
-    
-    consulClient.Agent.ServiceRegister(registration).Wait();
-});
-
-lifetime.ApplicationStopping.Register(() =>
-{
-    consulClient.Agent.ServiceDeregister(serviceId).Wait();
-});
-
-// Health Check Endpoint
-app.MapGet("/health", () => Results.Ok(new { status = "Healthy", service = serviceName }));
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
 app.Run();
