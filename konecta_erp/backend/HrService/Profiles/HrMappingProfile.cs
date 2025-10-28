@@ -18,6 +18,9 @@ namespace HrService.Profiles
             CreateMap<UpdateEmployeeDto, Employee>()
                 .ForMember(dest => dest.HireDate, opt => opt.Condition(src => src.HireDate.HasValue))
                 .ForMember(dest => dest.UserId, opt => opt.Condition(src => src.UserId.HasValue))
+                .ForMember(dest => dest.ExitDate, opt => opt.Condition(src => src.ExitDate.HasValue))
+                .ForMember(dest => dest.ExitReason, opt => opt.Condition(src => !string.IsNullOrWhiteSpace(src.ExitReason)))
+                .ForMember(dest => dest.EligibleForRehire, opt => opt.Condition(src => src.EligibleForRehire.HasValue))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow));
 
             CreateMap<Employee, EmployeeResponseDto>()
@@ -90,6 +93,16 @@ namespace HrService.Profiles
 
             CreateMap<AttendanceRecord, AttendanceRecordResponseDto>()
                 .ForMember(dest => dest.EmployeeName, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.FullName : string.Empty));
+
+            CreateMap<SubmitResignationRequestDto, ResignationRequest>()
+                .ForMember(dest => dest.RequestedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => ResignationStatus.Pending))
+                .ForMember(dest => dest.Reason, opt => opt.MapFrom(src => src.Reason));
+
+            CreateMap<ResignationRequest, ResignationRequestResponseDto>()
+                .ForMember(dest => dest.EmployeeName, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.FullName : string.Empty))
+                .ForMember(dest => dest.EmployeeEmail, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.WorkEmail : string.Empty))
+                .ForMember(dest => dest.ApprovedByName, opt => opt.MapFrom(src => src.ApprovedBy != null ? src.ApprovedBy.FullName : null));
         }
     }
 }

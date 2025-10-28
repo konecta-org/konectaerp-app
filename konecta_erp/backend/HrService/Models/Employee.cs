@@ -50,5 +50,12 @@ namespace HrService.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedAt { get; set; }
+
+        public DateTime? ExitDate { get; set; }
+
+        [MaxLength(2000)]
+        public string? ExitReason { get; set; }
+
+        public bool? EligibleForRehire { get; set; }
     }
 }

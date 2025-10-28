@@ -30,5 +30,12 @@ namespace HrService.Dtos
         public DateTime? HireDate { get; set; }
 
         public Guid? UserId { get; set; }
+
+        public DateTime? ExitDate { get; set; }
+
+        [MaxLength(2000)]
+        public string? ExitReason { get; set; }
+
+        public bool? EligibleForRehire { get; set; }
     }
 }

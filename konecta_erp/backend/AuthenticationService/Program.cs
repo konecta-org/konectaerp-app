@@ -136,7 +136,7 @@ builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
 builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
 builder.Services.AddSingleton<IEventPublisher, RabbitMqPublisher>();
-builder.Services.AddHostedService<EmployeeCreatedConsumer>();
+builder.Services.AddHostedService<EmployeeEventsConsumer>();
 
 
 var app = builder.Build();

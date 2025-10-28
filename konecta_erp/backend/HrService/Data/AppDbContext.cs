@@ -17,6 +17,7 @@ namespace HrService.Data
         public DbSet<Interview> Interviews => Set<Interview>();
         public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
         public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
+        public DbSet<ResignationRequest> ResignationRequests => Set<ResignationRequest>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -91,6 +92,22 @@ namespace HrService.Data
                 .WithMany()
                 .HasForeignKey(a => a.EmployeeId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ResignationRequest>()
+                .HasOne(r => r.Employee)
+                .WithMany()
+                .HasForeignKey(r => r.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ResignationRequest>()
+                .HasOne(r => r.ApprovedBy)
+                .WithMany()
+                .HasForeignKey(r => r.ApprovedByEmployeeId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<ResignationRequest>()
+                .HasIndex(r => new { r.EmployeeId, r.Status })
+                .HasFilter("[Status] = 0");
         }
     }
 }

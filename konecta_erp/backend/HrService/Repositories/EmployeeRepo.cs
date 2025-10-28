@@ -92,6 +92,23 @@ namespace HrService.Repositories
             return true;
         }
 
+        public async Task<bool> RecordEmployeeExitAsync(Guid employeeId, DateTime exitDate, EmploymentStatus exitStatus, string? reason, bool? eligibleForRehire)
+        {
+            var employee = await _context.Employees.FirstOrDefaultAsync(e => e.Id == employeeId);
+            if (employee == null)
+            {
+                return false;
+            }
+
+            employee.ExitDate = exitDate;
+            employee.ExitReason = reason;
+            employee.EligibleForRehire = eligibleForRehire;
+            employee.Status = exitStatus;
+            employee.UpdatedAt = DateTime.UtcNow;
+
+            return true;
+        }
+
         public async Task<bool> SaveChangesAsync()
         {
             return await _context.SaveChangesAsync() > 0;

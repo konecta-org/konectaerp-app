@@ -32,6 +32,7 @@ builder.Services.AddScoped<IJobApplicationRepo, JobApplicationRepo>();
 builder.Services.AddScoped<IInterviewRepo, InterviewRepo>();
 builder.Services.AddScoped<ILeaveRequestRepo, LeaveRequestRepo>();
 builder.Services.AddScoped<IAttendanceRepo, AttendanceRepo>();
+builder.Services.AddScoped<IResignationRequestRepo, ResignationRequestRepo>();
 
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
 builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
