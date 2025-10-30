@@ -1,0 +1,26 @@
+server:
+  port: 8085
+
+services:
+  finance:
+    # will be @FeignClient(name = "finance-service") for service discovery later
+    url: http://localhost:5003
+  hr:
+    # will be @FeignClient(name = "hr-service") for service discovery later
+    url: http://localhost:5001
+  inventory:
+    # will be @FeignClient(name = "inventory-service") for service discovery later
+    url: http://localhost:5004
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
