@@ -1,39 +1,40 @@
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
-using UserManagementService.Data;
 using UserManagementService.Events;
-using UserManagementService.Models;
+using UserManagementService.Services;
 
 namespace UserManagementService.Consumers
 {
     public class UserCreatedConsumer : IConsumer<UserCreatedEvent>
     {
-        private readonly AppDbContext _db;
+        private readonly IUserService _userService;
+        private readonly ILogger<UserCreatedConsumer> _logger;
 
-        public UserCreatedConsumer(AppDbContext db)
+        public UserCreatedConsumer(IUserService userService, ILogger<UserCreatedConsumer> logger)
         {
-            _db = db;
+            _userService = userService;
+            _logger = logger;
         }
 
         public async Task Consume(ConsumeContext<UserCreatedEvent> context)
         {
-            var msg = context.Message;
+            var message = context.Message;
 
-           
-            var exists = await _db.Users.AnyAsync(u => u.Id == msg.UserId);
-            if (exists) return;
-
-            var user = new User
+            try
             {
-                Id = msg.UserId,
-                Email = msg.Email,
-                FullName = msg.FullName,
-                Role = string.IsNullOrWhiteSpace(msg.Role) ? "Employee" : msg.Role,
-                CreatedAt = DateTime.UtcNow
-            };
+                await _userService.CreateOrUpdateFromExternalAsync(
+                    message.UserId,
+                    message.Email,
+                    message.FullName,
+                    message.Role,
+                    context.CancellationToken);
 
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
+                _logger.LogInformation("Processed user-created event for {UserId}", message.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process user-created event for {UserId}", message.UserId);
+                throw;
+            }
         }
     }
 }

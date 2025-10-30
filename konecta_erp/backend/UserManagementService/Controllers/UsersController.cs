@@ -1,8 +1,7 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using UserManagementService.Data;
 using UserManagementService.Dtos;
-using UserManagementService.Models;
+using UserManagementService.Services;
 
 namespace UserManagementService.Controllers
 {
@@ -10,88 +9,120 @@ namespace UserManagementService.Controllers
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
-        private readonly AppDbContext _db;
+        private readonly IUserService _userService;
+        private readonly IMapper _mapper;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(AppDbContext db, ILogger<UsersController> logger)
+        public UsersController(IUserService userService, IMapper mapper, ILogger<UsersController> logger)
         {
-            _db = db;
+            _userService = userService;
+            _mapper = mapper;
             _logger = logger;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetUsers()
+        public async Task<ActionResult<PagedResultDto<UserResponseDto>>> GetUsers([FromQuery] UserQueryParameters parameters, CancellationToken cancellationToken)
         {
-            var users = await _db.Users
-                .Where(u => !u.IsDeleted)
-                .Select(u => new UserResponseDto {
-                    Id = u.Id,
-                    Email = u.Email,
-                    FullName = u.FullName,
-                    Department = u.Department,
-                    Role = u.Role,
-                    IsDeleted = u.IsDeleted,
-                    CreatedAt = u.CreatedAt
-                })
-                .ToListAsync();
-
-            return Ok(users);
+            var pagedUsers = await _userService.GetUsersAsync(parameters, cancellationToken);
+            var mappedUsers = pagedUsers.Items.Select(user => _mapper.Map<UserResponseDto>(user)).ToList();
+            var response = new PagedResultDto<UserResponseDto>(mappedUsers, pagedUsers.Page, pagedUsers.PageSize, pagedUsers.TotalItems);
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<UserResponseDto>> GetUser(string id)
+        public async Task<ActionResult<UserResponseDto>> GetUserById(string id, CancellationToken cancellationToken)
         {
-            var u = await _db.Users.FindAsync(id);
-            if (u == null || u.IsDeleted) return NotFound();
+            var user = await _userService.GetByIdAsync(id, cancellationToken);
+            if (user == null || user.IsDeleted)
+            {
+                return NotFound();
+            }
 
-            var dto = new UserResponseDto {
-                Id = u.Id,
-                Email = u.Email,
-                FullName = u.FullName,
-                Department = u.Department,
-                Role = u.Role,
-                IsDeleted = u.IsDeleted,
-                CreatedAt = u.CreatedAt
-            };
-            return Ok(dto);
+            return Ok(_mapper.Map<UserResponseDto>(user));
         }
 
-        [HttpPatch("{id}/role")]
-        public async Task<IActionResult> ChangeRole(string id, [FromBody] RoleChangeDto dto)
+        [HttpPost]
+        public async Task<ActionResult<UserResponseDto>> CreateUser([FromBody] UserCreateDto request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(dto.NewRole)) return BadRequest("NewRole is required.");
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
 
-            var user = await _db.Users.FindAsync(id);
-            if (user == null || user.IsDeleted) return NotFound();
-
-            user.Role = dto.NewRole;
-            await _db.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> SoftDelete(string id)
-        {
-            var user = await _db.Users.FindAsync(id);
-            if (user == null) return NotFound();
-
-            user.IsDeleted = true;
-            await _db.SaveChangesAsync();
-            return NoContent();
+            try
+            {
+                var user = await _userService.CreateAsync(request, cancellationToken);
+                var response = _mapper.Map<UserResponseDto>(user);
+                return CreatedAtAction(nameof(GetUserById), new { id = response.Id }, response);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Failed to create user {Email}", request.Email);
+                ModelState.AddModelError(nameof(request.Email), ex.Message);
+                return ValidationProblem(ModelState);
+            }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProfile(string id, [FromBody] UserResponseDto dto)
+        public async Task<ActionResult<UserResponseDto>> UpdateUser(string id, [FromBody] UserUpdateDto request, CancellationToken cancellationToken)
         {
-            if (id != dto.Id) return BadRequest("Id mismatch.");
-            var user = await _db.Users.FindAsync(id);
-            if (user == null || user.IsDeleted) return NotFound();
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
 
-            user.FullName = dto.FullName;
-            user.Department = dto.Department;
-            await _db.SaveChangesAsync();
-            return NoContent();
+            var updated = await _userService.UpdateAsync(id, request, cancellationToken);
+            if (updated == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(_mapper.Map<UserResponseDto>(updated));
+        }
+
+        [HttpPatch("{id}/role")]
+        public async Task<IActionResult> ChangeRole(string id, [FromBody] RoleChangeDto request, CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            var changed = await _userService.ChangeRoleAsync(id, request, cancellationToken);
+            return changed ? NoContent() : NotFound();
+        }
+
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> UpdateStatus(string id, [FromBody] UserStatusUpdateDto request, CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            var updated = await _userService.UpdateStatusAsync(id, request, cancellationToken);
+            return updated ? NoContent() : NotFound();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> SoftDelete(string id, CancellationToken cancellationToken)
+        {
+            var deleted = await _userService.SoftDeleteAsync(id, cancellationToken);
+            return deleted ? NoContent() : NotFound();
+        }
+
+        [HttpPost("{id}/restore")]
+        public async Task<IActionResult> Restore(string id, CancellationToken cancellationToken)
+        {
+            var restored = await _userService.RestoreAsync(id, cancellationToken);
+            return restored ? NoContent() : NotFound();
+        }
+
+        [HttpGet("summary")]
+        public async Task<ActionResult<UserSummaryDto>> GetSummary(CancellationToken cancellationToken)
+        {
+            var summary = await _userService.GetSummaryAsync(cancellationToken);
+            return Ok(summary);
         }
     }
 }

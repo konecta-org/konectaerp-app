@@ -1,21 +1,13 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace UserManagementService.Models
+namespace UserManagementService.Dtos
 {
-    public class User
+    public class UserCreateDto
     {
-        [Key]
-        [MaxLength(64)]
-        public string Id { get; set; } = Guid.NewGuid().ToString();
-
+        [EmailAddress]
         [Required]
         [MaxLength(256)]
         public string Email { get; set; } = string.Empty;
-
-        [Required]
-        [MaxLength(256)]
-        public string NormalizedEmail { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(128)]
@@ -45,24 +37,10 @@ namespace UserManagementService.Models
         [MaxLength(64)]
         public string? ManagerId { get; set; }
 
-        public bool IsLocked { get; set; }
+        [MaxLength(64)]
+        public string? ExternalUserId { get; set; }
 
-        public bool IsDeleted { get; set; }
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        public DateTime? UpdatedAt { get; set; }
-
-        public DateTime? LastLoginAt { get; set; }
-
-        public DateTime? DeactivatedAt { get; set; }
-
-        [Timestamp]
-        public byte[] RowVersion { get; set; } = Array.Empty<byte>();
-
-        public void NormalizeEmail()
-        {
-            NormalizedEmail = Email.ToUpperInvariant();
-        }
+        [MaxLength(256)]
+        public string? CreatedBy { get; set; }
     }
 }

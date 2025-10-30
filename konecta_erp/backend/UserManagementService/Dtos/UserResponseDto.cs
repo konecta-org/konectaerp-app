@@ -1,13 +1,21 @@
 namespace UserManagementService.Dtos
 {
-    public class UserResponseDto
-    {
-        public string Id { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string FullName { get; set; } = string.Empty;
-        public string? Department { get; set; }
-        public string Role { get; set; } = "Employee";
-        public bool IsDeleted { get; set; }
-        public DateTime CreatedAt { get; set; }
-    }
+    public record UserResponseDto(
+        string Id,
+        string Email,
+        string FullName,
+        string? FirstName,
+        string? LastName,
+        string? Department,
+        string? JobTitle,
+        string Role,
+        string Status,
+        string? PhoneNumber,
+        string? ManagerId,
+        bool IsLocked,
+        bool IsDeleted,
+        DateTime CreatedAt,
+        DateTime? UpdatedAt,
+        DateTime? LastLoginAt,
+        DateTime? DeactivatedAt);
 }
