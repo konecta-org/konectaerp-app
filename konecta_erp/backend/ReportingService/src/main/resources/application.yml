@@ -1,6 +1,24 @@
 server:
   port: 8085
 
+spring:
+  application:
+    name: reporting-service
+  cloud:
+    consul:
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:8500}
+      discovery:
+        register: ${CONSUL_REGISTER:true}
+        service-name: ${spring.application.name}
+        instance-id: ${spring.application.name}-${random.value}
+        hostname: ${CONSUL_SERVICE_HOST:host.docker.internal}
+        prefer-ip-address: false
+        health-check-path: /actuator/health
+        health-check-interval: 15s
+      config:
+        enabled: false
+
 services:
   finance:
     # will be @FeignClient(name = "finance-service") for service discovery later

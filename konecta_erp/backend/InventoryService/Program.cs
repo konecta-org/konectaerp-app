@@ -4,8 +4,10 @@ using InventoryService.Repositories;
 using InventoryService.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using SharedContracts.ServiceDiscovery;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddConsulServiceDiscovery(builder.Configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -40,6 +42,17 @@ builder.Services.AddCors(options =>
     });
 });
 
+var serviceConfig = builder.Configuration.GetSection("ServiceConfig");
+var serviceName = serviceConfig.GetValue<string>("ServiceName") ?? builder.Environment.ApplicationName;
+var serviceHost = serviceConfig.GetValue<string>("Host") ?? "localhost";
+var servicePort = serviceConfig.GetValue<int>("Port");
+if (servicePort <= 0)
+{
+    throw new InvalidOperationException("ServiceConfig:Port must be a positive number.");
+}
+
+builder.WebHost.UseUrls($"http://{serviceHost}:{servicePort}");
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -51,6 +64,22 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.MapControllers();
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
+app.MapGet("/system/health", () =>
+    Results.Ok(new
+    {
+        status = "UP",
+        service = serviceName,
+        timestamp = DateTimeOffset.UtcNow
+    }));
+
+app.MapGet("/system/fallback", () =>
+    Results.Json(new
+    {
+        status = "UNAVAILABLE",
+        service = serviceName,
+        message = "Serving fallback response from Inventory Service.",
+        timestamp = DateTimeOffset.UtcNow
+    }, statusCode: StatusCodes.Status503ServiceUnavailable));
 
 app.Run();

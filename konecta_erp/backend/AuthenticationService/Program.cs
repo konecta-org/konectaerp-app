@@ -8,9 +8,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SharedContracts.ServiceDiscovery;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddConsulServiceDiscovery(builder.Configuration);
 
 // Add services to the container
 builder.Services.AddControllers();
@@ -110,8 +112,10 @@ builder.Services.AddAuthentication(options =>
         },
         OnMessageReceived = context =>
         {
-            var hasAuth = context.Request.Headers.ContainsKey("Authorization");
-            Console.WriteLine($"JWT message received. Has Authorization header: {hasAuth}");
+            if (context.Request.Headers.ContainsKey("Authorization"))
+            {
+                Console.WriteLine("JWT message received with Authorization header.");
+            }
             return Task.CompletedTask;
         }
     };
@@ -138,6 +142,30 @@ builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
 builder.Services.AddSingleton<IEventPublisher, RabbitMqPublisher>();
 builder.Services.AddHostedService<EmployeeEventsConsumer>();
 
+var serviceConfig = builder.Configuration.GetSection("ServiceConfig");
+var serviceName = serviceConfig.GetValue<string>("ServiceName") ?? builder.Environment.ApplicationName;
+var servicePort = serviceConfig.GetValue<int>("Port");
+var serviceScheme = serviceConfig.GetValue<string>("Scheme") ?? "http";
+if (servicePort <= 0)
+{
+    throw new InvalidOperationException("ServiceConfig:Port must be a positive number.");
+}
+
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.HttpsPort = servicePort;
+});
+
+builder.WebHost.ConfigureKestrel((_, options) =>
+{
+    options.ListenAnyIP(servicePort, listenOptions =>
+    {
+        if (string.Equals(serviceScheme, "https", StringComparison.OrdinalIgnoreCase))
+        {
+            listenOptions.UseHttps();
+        }
+    });
+});
 
 var app = builder.Build();
 
@@ -153,5 +181,22 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+app.MapGet("/system/health", () =>
+    Results.Ok(new
+    {
+        status = "UP",
+        service = serviceName,
+        timestamp = DateTimeOffset.UtcNow
+    }));
+
+app.MapGet("/system/fallback", () =>
+    Results.Json(new
+    {
+        status = "UNAVAILABLE",
+        service = serviceName,
+        message = "Serving fallback response from Authentication Service.",
+        timestamp = DateTimeOffset.UtcNow
+    }, statusCode: StatusCodes.Status503ServiceUnavailable));
 
 app.Run();

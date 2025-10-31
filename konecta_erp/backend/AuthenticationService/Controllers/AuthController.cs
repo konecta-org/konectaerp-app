@@ -190,21 +190,6 @@ namespace AuthenticationService.Controllers
             });
         }
 
-        [HttpGet("me")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public IActionResult Me()
-        {
-            var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
-            var email = User.FindFirst(ClaimTypes.Email)?.Value
-                ?? User.FindFirst(JwtRegisteredClaimNames.Email)?.Value;
-
-            return Ok(new GenericResponse
-            {
-                Result = new { Email = email, Claims = claims },
-                Code = "200",
-                C_Message = "User data retrieved successfully.",
-                S_Message = "Fetched claims and email from authenticated token."
-            });
-        }
+ 
     }
 }

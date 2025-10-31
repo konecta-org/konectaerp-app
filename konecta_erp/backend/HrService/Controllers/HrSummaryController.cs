@@ -3,6 +3,7 @@ using HrService.Dtos;
 using HrService.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using HrService.Models;
 
 namespace HrService.Controllers
 {
