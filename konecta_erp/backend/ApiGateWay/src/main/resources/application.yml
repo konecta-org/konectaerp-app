@@ -39,12 +39,30 @@ spring:
               args:
                 name: authenticationServiceCircuitBreaker
                 fallbackUri: forward:/fallback/authentication-service
+        - id: authentication-service-direct
+          uri: ${upstreams.authentication}
+          predicates:
+            - Path=/api/Auth/**,/api/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: authenticationServiceCircuitBreaker
+                fallbackUri: forward:/fallback/authentication-service
         - id: hr-service
           uri: ${upstreams.hr}
           predicates:
             - Path=/hr/**
           filters:
             - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: hrServiceCircuitBreaker
+                fallbackUri: forward:/fallback/hr-service
+        - id: hr-service-direct
+          uri: ${upstreams.hr}
+          predicates:
+            - Path=/api/Attendance/**,/api/attendance/**,/api/Department/**,/api/department/**,/api/Employee/**,/api/employee/**,/api/HrSummary/**,/api/hrsummary/**,/api/Interviews/**,/api/interviews/**,/api/JobApplications/**,/api/jobapplications/**,/api/JobOpenings/**,/api/jobopenings/**,/api/LeaveRequests/**,/api/leaverequests/**,/api/ResignationRequests/**,/api/resignationrequests/**
+          filters:
             - name: CircuitBreaker
               args:
                 name: hrServiceCircuitBreaker
@@ -59,12 +77,30 @@ spring:
               args:
                 name: userManagementServiceCircuitBreaker
                 fallbackUri: forward:/fallback/user-management-service
+        - id: user-management-service-direct
+          uri: ${upstreams.userManagement}
+          predicates:
+            - Path=/api/Users/**,/api/users/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: userManagementServiceCircuitBreaker
+                fallbackUri: forward:/fallback/user-management-service
         - id: inventory-service
           uri: ${upstreams.inventory}
           predicates:
             - Path=/inventory/**
           filters:
             - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: inventoryServiceCircuitBreaker
+                fallbackUri: forward:/fallback/inventory-service
+        - id: inventory-service-direct
+          uri: ${upstreams.inventory}
+          predicates:
+            - Path=/api/InventoryItems/**,/api/inventoryitems/**,/api/InventorySummary/**,/api/inventorysummary/**,/api/StockOperations/**,/api/stockoperations/**,/api/StockTransactions/**,/api/stocktransactions/**,/api/Warehouses/**,/api/warehouses/**
+          filters:
             - name: CircuitBreaker
               args:
                 name: inventoryServiceCircuitBreaker
@@ -79,12 +115,30 @@ spring:
               args:
                 name: financeServiceCircuitBreaker
                 fallbackUri: forward:/fallback/finance-service
+        - id: finance-service-direct
+          uri: ${upstreams.finance}
+          predicates:
+            - Path=/api/Budgets/**,/api/budgets/**,/api/Expenses/**,/api/expenses/**,/api/FinanceSummary/**,/api/financesummary/**,/api/Invoices/**,/api/invoices/**,/api/PayrollRuns/**,/api/payrollruns/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: financeServiceCircuitBreaker
+                fallbackUri: forward:/fallback/finance-service
         - id: reporting-service
           uri: ${upstreams.reporting}
           predicates:
             - Path=/reports/**
           filters:
             - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: reportingServiceCircuitBreaker
+                fallbackUri: forward:/fallback/reporting-service
+        - id: reporting-service-direct
+          uri: ${upstreams.reporting}
+          predicates:
+            - Path=/api/reports/**
+          filters:
             - name: CircuitBreaker
               args:
                 name: reportingServiceCircuitBreaker
@@ -146,3 +200,4 @@ logging:
   level:
     org.springframework.cloud.gateway: INFO
     org.springframework.cloud.consul: INFO
+

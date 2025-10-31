@@ -13,6 +13,7 @@ namespace HrService.Messaging
         public string EmployeeCreatedRoutingKey { get; set; } = "hr.employee.created";
         public string EmployeeExitedRoutingKey { get; set; } = "hr.employee.exited";
         public string EmployeeResignationApprovedRoutingKey { get; set; } = "hr.employee.resignation.approved";
+        public string EmployeeTerminatedRoutingKey { get; set; } = "hr.employee.terminated";
         public string UserProvisionedQueue { get; set; } = "hr.user-provisioned";
         public string UserProvisionedRoutingKey { get; set; } = "auth.user.provisioned";
     }

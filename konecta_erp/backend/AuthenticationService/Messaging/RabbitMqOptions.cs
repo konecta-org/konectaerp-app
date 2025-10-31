@@ -14,8 +14,10 @@ namespace AuthenticationService.Messaging
         public string EmployeeCreatedRoutingKey { get; set; } = "hr.employee.created";
         public string EmployeeExitedRoutingKey { get; set; } = "hr.employee.exited";
         public string EmployeeResignationApprovedRoutingKey { get; set; } = "hr.employee.resignation.approved";
+        public string EmployeeTerminatedRoutingKey { get; set; } = "hr.employee.terminated";
         public string UserProvisionedRoutingKey { get; set; } = "auth.user.provisioned";
         public string UserDeactivatedRoutingKey { get; set; } = "auth.user.deactivated";
         public string UserResignedRoutingKey { get; set; } = "auth.user.resigned";
+        public string UserTerminatedRoutingKey { get; set; } = "auth.user.terminated";
     }
 }

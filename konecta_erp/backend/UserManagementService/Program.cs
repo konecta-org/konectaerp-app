@@ -1,12 +1,12 @@
-using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using UserManagementService.Consumers;
+using SharedContracts.ServiceDiscovery;
+using UserManagementService.BackgroundServices;
 using UserManagementService.Data;
+using UserManagementService.Messaging;
 using UserManagementService.Profiles;
 using UserManagementService.Repositories;
 using UserManagementService.Services;
-using SharedContracts.ServiceDiscovery;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddConsulServiceDiscovery(builder.Configuration);
@@ -39,43 +39,9 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddMassTransit(cfg =>
-{
-    cfg.AddConsumer<UserCreatedConsumer>();
-
-    cfg.UsingRabbitMq((context, bus) =>
-    {
-        var rabbitSection = builder.Configuration.GetSection("RabbitMq");
-        var hostName = rabbitSection["HostName"] ?? "localhost";
-        var port = rabbitSection.GetValue("Port", 5672);
-        var userName = rabbitSection["UserName"];
-        var password = rabbitSection["Password"];
-        var virtualHost = rabbitSection["VirtualHost"] ?? "/";
-        var exchange = rabbitSection["Exchange"] ?? "konecta.erp";
-        var queueName = rabbitSection["UserCreatedQueue"] ?? "user-management.user-created";
-        var routingKey = rabbitSection["UserCreatedRoutingKey"] ?? "auth.user.created";
-
-        bus.Host(hostName, (ushort)port, virtualHost, h =>
-        {
-            if (!string.IsNullOrWhiteSpace(userName) && !string.IsNullOrWhiteSpace(password))
-            {
-                h.Username(userName);
-                h.Password(password);
-            }
-        });
-
-        bus.ReceiveEndpoint(queueName, endpoint =>
-        {
-            endpoint.ConfigureConsumeTopology = false;
-            endpoint.Bind(exchange, bind =>
-            {
-                bind.RoutingKey = routingKey;
-                bind.ExchangeType = "topic";
-            });
-            endpoint.ConfigureConsumer<UserCreatedConsumer>(context);
-        });
-    });
-});
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
+builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
+builder.Services.AddHostedService<UserEventsConsumer>();
 
 var serviceConfig = builder.Configuration.GetSection("ServiceConfig");
 var serviceName = serviceConfig.GetValue<string>("ServiceName") ?? builder.Environment.ApplicationName;
@@ -96,7 +62,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.MapControllers();
 

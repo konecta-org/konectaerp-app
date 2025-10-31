@@ -11,7 +11,7 @@ namespace HrService.Repositories
         Task UpdateEmployeeAsync(Employee employee);
         Task<bool> UpdateEmployeeIdentityAsync(Guid employeeId, Guid identityUserId);
         Task<bool> RecordEmployeeExitAsync(Guid employeeId, DateTime exitDate, EmploymentStatus exitStatus, string? reason, bool? eligibleForRehire);
-        Task<bool> DeleteEmployeeAsync(Guid id);
+        Task<bool> TerminateEmployeeAsync(Guid id, string? reason, bool? eligibleForRehire);
         Task<bool> SaveChangesAsync();
     }
 }

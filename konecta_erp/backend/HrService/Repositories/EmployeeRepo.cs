@@ -62,7 +62,7 @@ namespace HrService.Repositories
             _context.Entry(existingEmployee).CurrentValues.SetValues(employee);
         }
 
-        public async Task<bool> DeleteEmployeeAsync(Guid id)
+        public async Task<bool> TerminateEmployeeAsync(Guid id, string? reason, bool? eligibleForRehire)
         {
             var employee = await _context.Employees.FirstOrDefaultAsync(e => e.Id == id);
             if (employee == null)
@@ -70,7 +70,13 @@ namespace HrService.Repositories
                 return false;
             }
 
-            _context.Employees.Remove(employee);
+            employee.Status = EmploymentStatus.Terminated;
+            employee.ExitDate = DateTime.UtcNow;
+            employee.ExitReason = reason;
+            employee.EligibleForRehire = eligibleForRehire;
+            employee.UpdatedAt = DateTime.UtcNow;
+
+            _context.Employees.Update(employee);
             return true;
         }
 

@@ -143,17 +143,38 @@ namespace HrService.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> DeleteEmployee(Guid id, CancellationToken cancellationToken)
+        [HttpPost("{id:guid}/fire")]
+        public async Task<IActionResult> FireEmployee(Guid id, [FromBody] FireEmployeeRequestDto? request, CancellationToken cancellationToken)
         {
-            var deleted = await _employeeRepo.DeleteEmployeeAsync(id);
-            if (!deleted)
+            var employee = await _employeeRepo.GetEmployeeByIdAsync(id);
+            if (employee == null)
+            {
+                return NotFound();
+            }
+
+            var reason = string.IsNullOrWhiteSpace(request?.Reason) ? "Terminated" : request!.Reason!.Trim();
+            var eligibleForRehire = request?.EligibleForRehire;
+
+            var terminated = await _employeeRepo.TerminateEmployeeAsync(id, reason, eligibleForRehire);
+            if (!terminated)
             {
                 return NotFound();
             }
 
             await _employeeRepo.SaveChangesAsync();
+
+            var terminationEvent = new EmployeeTerminatedEvent(
+                employee.Id,
+                employee.UserId,
+                DateTime.UtcNow,
+                reason,
+                eligibleForRehire ?? false);
+
+            await _eventPublisher.PublishAsync(_rabbitOptions.EmployeeTerminatedRoutingKey, terminationEvent, cancellationToken);
+            _logger.LogInformation("Employee {EmployeeId} terminated and event published.", employee.Id);
+
             return NoContent();
         }
     }
 }
+

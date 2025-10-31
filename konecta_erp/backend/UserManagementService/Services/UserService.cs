@@ -171,6 +171,27 @@ namespace UserManagementService.Services
             return true;
         }
 
+        public async Task<bool> TerminateAsync(string id, string? reason, CancellationToken cancellationToken = default)
+        {
+            var user = await _repository.GetByIdAsync(id, cancellationToken);
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.IsDeleted = true;
+            user.IsLocked = true;
+            user.Status = "Terminated";
+            user.DeactivatedAt = DateTime.UtcNow;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            _repository.Update(user);
+            await _repository.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Terminated user {UserId} ({Reason})", id, reason ?? "No reason supplied");
+            return true;
+        }
+
         public async Task<UserSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default)
         {
             var summary = await _repository.GetSummaryAsync(cancellationToken);

@@ -50,6 +50,8 @@ namespace AuthenticationService.BackgroundServices
             _channel.QueueBind(_options.EmployeeCreatedQueue, _options.Exchange, _options.EmployeeCreatedRoutingKey);
             _channel.QueueBind(_options.EmployeeCreatedQueue, _options.Exchange, _options.EmployeeExitedRoutingKey);
             _channel.QueueBind(_options.EmployeeCreatedQueue, _options.Exchange, _options.EmployeeResignationApprovedRoutingKey);
+            _channel.QueueBind(_options.EmployeeCreatedQueue, _options.Exchange, _options.EmployeeTerminatedRoutingKey);
+            _channel.QueueBind(_options.EmployeeCreatedQueue, _options.Exchange, _options.EmployeeTerminatedRoutingKey);
             _channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
 
             var consumer = new AsyncEventingBasicConsumer(_channel);
@@ -80,6 +82,12 @@ namespace AuthenticationService.BackgroundServices
                         break;
                     case var key when key == _options.EmployeeResignationApprovedRoutingKey:
                         await HandleResignationApprovedAsync(eventArgs, cancellationToken);
+                        break;
+                    case var key when key == _options.EmployeeTerminatedRoutingKey:
+                        await HandleEmployeeTerminatedAsync(eventArgs, cancellationToken);
+                        break;
+                    case var key when key == _options.EmployeeTerminatedRoutingKey:
+                        await HandleEmployeeTerminatedAsync(eventArgs, cancellationToken);
                         break;
                     default:
                         _logger.LogWarning("Unhandled employee event routing key {RoutingKey}.", eventArgs.RoutingKey);
@@ -117,6 +125,7 @@ namespace AuthenticationService.BackgroundServices
             }
 
             var password = PasswordGenerator.Generate();
+            Console.WriteLine($"Generated password for {payload.WorkEmail}: {password}");
             var user = new ApplicationUser
             {
                 UserName = payload.WorkEmail,
@@ -136,15 +145,15 @@ namespace AuthenticationService.BackgroundServices
 
             _logger.LogInformation("Created identity user {UserId} for employee {EmployeeId}.", user.Id, payload.EmployeeId);
 
-            try
-            {
-                await emailSender.SendEmployeeCredentialsAsync(payload.PersonalEmail, payload.FullName, payload.WorkEmail, password);
-                _logger.LogInformation("Sent credentials email to {PersonalEmail}.", payload.PersonalEmail);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send credentials email to {PersonalEmail}", payload.PersonalEmail);
-            }
+            // try
+            // {
+            //     await emailSender.SendEmployeeCredentialsAsync(payload.PersonalEmail, payload.FullName, payload.WorkEmail, password);
+            //     _logger.LogInformation("Sent credentials email to {PersonalEmail}.", payload.PersonalEmail);
+            // }
+            // catch (Exception ex)
+            // {
+            //     _logger.LogError(ex, "Failed to send credentials email to {PersonalEmail}", payload.PersonalEmail);
+            // }
 
             var roles = new[] { "Employee" };
             var userProvisionedEvent = new UserProvisionedEvent(
@@ -257,6 +266,52 @@ namespace AuthenticationService.BackgroundServices
             }
         }
 
+        private async Task HandleEmployeeTerminatedAsync(BasicDeliverEventArgs eventArgs, CancellationToken cancellationToken)
+        {
+            var payload = JsonSerializer.Deserialize<EmployeeTerminatedEvent>(eventArgs.Body.ToArray(), _serializerOptions);
+            if (payload == null)
+            {
+                _logger.LogWarning("Received null EmployeeTerminatedEvent payload.");
+                return;
+            }
+
+            using var scope = _scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+            ApplicationUser? user = null;
+
+            if (payload.UserId.HasValue)
+            {
+                user = await userManager.FindByIdAsync(payload.UserId.Value.ToString());
+            }
+
+            user ??= await userManager.Users.FirstOrDefaultAsync(u => u.EmployeeId == payload.EmployeeId);
+
+            if (user == null)
+            {
+                _logger.LogWarning("Could not locate identity user for termination {EmployeeId}.", payload.EmployeeId);
+                return;
+            }
+
+            var deleteResult = await userManager.DeleteAsync(user);
+            if (!deleteResult.Succeeded)
+            {
+                var errors = string.Join("; ", deleteResult.Errors.Select(e => e.Description));
+                _logger.LogError("Failed to delete user {UserId} after termination. Errors: {Errors}", user.Id, errors);
+                return;
+            }
+
+            _logger.LogInformation("Deleted identity user {UserId} after termination.", user.Id);
+
+            var userTerminatedEvent = new UserTerminatedEvent(
+                user.Id,
+                payload.EmployeeId,
+                DateTime.UtcNow,
+                payload.Reason);
+
+            await _eventPublisher.PublishAsync(_options.UserTerminatedRoutingKey, userTerminatedEvent, cancellationToken);
+        }
+
         public override void Dispose()
         {
             base.Dispose();
@@ -264,3 +319,4 @@ namespace AuthenticationService.BackgroundServices
         }
     }
 }
+
