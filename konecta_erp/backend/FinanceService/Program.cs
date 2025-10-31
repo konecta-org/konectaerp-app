@@ -17,7 +17,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "Konecta ERP - Finance Service",
         Version = "v1",
-        Description = "Finance domain APIs covering invoicing, expenses, budgets, and payroll."
+        Description = "Finance domain APIs covering invoicing, expenses, budgets, payroll, and employee compensation management."
     });
 });
 
@@ -31,6 +31,8 @@ builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
 builder.Services.AddScoped<IBudgetRepository, BudgetRepository>();
 builder.Services.AddScoped<IPayrollRepository, PayrollRepository>();
 builder.Services.AddScoped<IFinanceSummaryService, FinanceSummaryService>();
+builder.Services.AddScoped<IEmployeeCompensationRepository, EmployeeCompensationRepository>();
+builder.Services.AddScoped<IEmployeeCompensationService, EmployeeCompensationService>();
 
 builder.Services.AddCors(options =>
 {

@@ -53,6 +53,35 @@ namespace FinanceService.Profiles
 
             CreateMap<PayrollEntryUpsertDto, PayrollEntry>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore());
+
+            // Employee compensation mappings
+            CreateMap<EmployeeAccountUpsertDto, EmployeeCompensationAccount>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.Bonuses, opt => opt.Ignore())
+                .ForMember(dest => dest.Deductions, opt => opt.Ignore());
+
+            CreateMap<EmployeeCompensationAccount, EmployeeCompensationResponseDto>()
+                .ForMember(dest => dest.TotalBonusesYtd, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalDeductionsYtd, opt => opt.Ignore())
+                .ForMember(dest => dest.NetCompensationYtd, opt => opt.Ignore())
+                .ForMember(dest => dest.RecentBonuses, opt => opt.Ignore())
+                .ForMember(dest => dest.RecentDeductions, opt => opt.Ignore());
+
+            CreateMap<CompensationBonusCreateDto, EmployeeBonus>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.EmployeeCompensationAccountId, opt => opt.Ignore())
+                .ForMember(dest => dest.Account, opt => opt.Ignore());
+
+            CreateMap<EmployeeBonus, EmployeeBonusResponseDto>();
+
+            CreateMap<CompensationDeductionCreateDto, EmployeeDeduction>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.EmployeeCompensationAccountId, opt => opt.Ignore())
+                .ForMember(dest => dest.Account, opt => opt.Ignore());
+
+            CreateMap<EmployeeDeduction, EmployeeDeductionResponseDto>();
         }
     }
 }
