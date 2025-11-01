@@ -151,10 +151,13 @@ if (servicePort <= 0)
     throw new InvalidOperationException("ServiceConfig:Port must be a positive number.");
 }
 
-builder.Services.AddHttpsRedirection(options =>
+if (string.Equals(serviceScheme, "https", StringComparison.OrdinalIgnoreCase))
 {
-    options.HttpsPort = servicePort;
-});
+    builder.Services.AddHttpsRedirection(options =>
+    {
+        options.HttpsPort = servicePort;
+    });
+}
 
 builder.WebHost.ConfigureKestrel((_, options) =>
 {
@@ -176,7 +179,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (string.Equals(serviceScheme, "https", StringComparison.OrdinalIgnoreCase))
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
