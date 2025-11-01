@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FinanceService.Controllers
 {
     [ApiController]
-    [Route("api/finance-summary")]
+    [Route("api/[controller]")]
     public class FinanceSummaryController : ControllerBase
     {
         private readonly IFinanceSummaryService _summaryService;

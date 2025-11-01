@@ -118,7 +118,7 @@ spring:
         - id: finance-service-direct
           uri: ${upstreams.finance}
           predicates:
-            - Path=/api/Budgets/**,/api/budgets/**,/api/Expenses/**,/api/expenses/**,/api/FinanceSummary/**,/api/financesummary/**,/api/Invoices/**,/api/invoices/**,/api/PayrollRuns/**,/api/payrollruns/**
+            - Path=/api/Budgets/**,/api/budgets/**,/api/Expenses/**,/api/expenses/**,/api/FinanceSummary/**,/api/financesummary/**,/api/finance-summary/**,/api/Invoices/**,/api/invoices/**,/api/PayrollRuns/**,/api/payrollruns/**,/api/EmployeeCompensation/**,/api/employeecompensation/**
           filters:
             - name: CircuitBreaker
               args:
@@ -200,4 +200,5 @@ logging:
   level:
     org.springframework.cloud.gateway: INFO
     org.springframework.cloud.consul: INFO
+
 

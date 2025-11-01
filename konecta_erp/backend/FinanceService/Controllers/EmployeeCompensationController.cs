@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FinanceService.Controllers
 {
     [ApiController]
-    [Route("api/employee-compensation")]
+    [Route("api/[controller]")]
     public class EmployeeCompensationController : ControllerBase
     {
         private readonly IEmployeeCompensationService _compensationService;
