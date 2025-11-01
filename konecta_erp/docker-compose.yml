@@ -47,8 +47,8 @@ services:
 
   config-server:
     build:
-      context: .
-      dockerfile: backend/config/Dockerfile
+      context: backend/config
+      dockerfile: Dockerfile
     container_name: config-server
     environment:
       SERVER_PORT: 8888
@@ -63,8 +63,8 @@ services:
 
   api-gateway:
     build:
-      context: .
-      dockerfile: backend/ApiGateWay/Dockerfile
+      context: backend/ApiGateWay
+      dockerfile: Dockerfile
     container_name: api-gateway
     environment:
       CONFIG_SERVER_URI: http://config-server:8888
@@ -92,8 +92,8 @@ services:
 
   reporting-service:
     build:
-      context: .
-      dockerfile: backend/ReportingService/Dockerfile
+      context: backend/ReportingService
+      dockerfile: Dockerfile
     container_name: reporting-service
     environment:
       CONFIG_SERVER_URI: http://config-server:8888
