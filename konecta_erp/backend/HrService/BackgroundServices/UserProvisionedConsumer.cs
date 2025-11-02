@@ -14,6 +14,7 @@ namespace HrService.BackgroundServices
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly RabbitMqOptions _options;
         private readonly ILogger<UserProvisionedConsumer> _logger;
+        private readonly IEventPublisher _eventPublisher;
         private IModel? _channel;
         private readonly JsonSerializerOptions _serializerOptions = new()
         {
@@ -24,12 +25,14 @@ namespace HrService.BackgroundServices
             IRabbitMqConnection connection,
             IServiceScopeFactory scopeFactory,
             IOptions<RabbitMqOptions> options,
+            IEventPublisher eventPublisher,
             ILogger<UserProvisionedConsumer> logger)
         {
             _connection = connection;
             _scopeFactory = scopeFactory;
             _logger = logger;
             _options = options.Value;
+            _eventPublisher = eventPublisher;
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -99,6 +102,29 @@ namespace HrService.BackgroundServices
 
             await employeeRepo.SaveChangesAsync();
             _logger.LogInformation("Linked employee {EmployeeId} to identity user {UserId}.", provisionedEvent.EmployeeId, provisionedEvent.UserId);
+
+            var employee = await employeeRepo.GetEmployeeByIdAsync(provisionedEvent.EmployeeId, includeDepartment: true);
+            if (employee == null)
+            {
+                _logger.LogWarning("Unable to load employee {EmployeeId} for compensation provisioning.", provisionedEvent.EmployeeId);
+                return;
+            }
+
+            var departmentName = employee.Department?.DepartmentName ?? string.Empty;
+            var compensationEvent = new EmployeeCompensationProvisionedEvent(
+                employee.Id,
+                employee.FullName,
+                employee.WorkEmail,
+                employee.PhoneNumber,
+                employee.Position,
+                employee.DepartmentId,
+                departmentName,
+                employee.Salary,
+                "USD",
+                DateTime.UtcNow);
+
+            await _eventPublisher.PublishAsync(_options.FinanceCompensationProvisionedRoutingKey, compensationEvent, CancellationToken.None);
+            _logger.LogInformation("Published compensation provisioning event for employee {EmployeeId}.", employee.Id);
         }
 
         public override void Dispose()

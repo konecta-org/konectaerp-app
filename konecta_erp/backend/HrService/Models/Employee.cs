@@ -29,6 +29,12 @@ namespace HrService.Models
         [Required, MaxLength(100)]
         public string Position { get; set; } = string.Empty;
 
+        [MaxLength(32)]
+        public string? PhoneNumber { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Salary { get; set; }
+
         [Required]
         public DateTime HireDate { get; set; } = DateTime.UtcNow;
 

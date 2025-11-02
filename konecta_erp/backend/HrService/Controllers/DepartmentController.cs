@@ -143,5 +143,41 @@ namespace HrService.Controllers
             _logger.LogInformation("Department {DepartmentId} deleted.", id);
             return NoContent();
         }
+
+        [HttpPut("{id:guid}/manager")]
+        public async Task<IActionResult> AssignManager(Guid id, [FromBody] AssignDepartmentManagerDto request, CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            var department = await _departmentRepo.GetDepartmentByIdAsync(id);
+            if (department == null)
+            {
+                return NotFound($"Department {id} not found.");
+            }
+
+            var employee = await _employeeRepo.GetEmployeeByIdAsync(request.EmployeeId);
+            if (employee == null)
+            {
+                return NotFound($"Employee {request.EmployeeId} not found.");
+            }
+
+            if (employee.DepartmentId != id)
+            {
+                return BadRequest("Employee must belong to the department before being assigned as manager.");
+            }
+
+            var updated = await _departmentRepo.AssignManagerAsync(id, request.EmployeeId);
+            if (!updated)
+            {
+                return NotFound($"Department {id} not found.");
+            }
+
+            await _departmentRepo.SaveChangesAsync();
+            _logger.LogInformation("Assigned employee {EmployeeId} as manager for department {DepartmentId}.", request.EmployeeId, id);
+            return NoContent();
+        }
     }
 }

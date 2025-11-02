@@ -80,6 +80,20 @@ namespace HrService.Repositories
             return true;
         }
 
+        public async Task<bool> AssignManagerAsync(Guid departmentId, Guid employeeId)
+        {
+            var department = await _context.Departments.FirstOrDefaultAsync(d => d.DepartmentId == departmentId);
+            if (department == null)
+            {
+                return false;
+            }
+
+            department.ManagerId = employeeId;
+            department.UpdatedAt = DateTime.UtcNow;
+            _context.Departments.Update(department);
+            return true;
+        }
+
         public async Task<bool> SaveChangesAsync()
         {
             return await _context.SaveChangesAsync() > 0;

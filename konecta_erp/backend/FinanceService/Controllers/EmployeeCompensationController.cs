@@ -47,6 +47,29 @@ namespace FinanceService.Controllers
             return Ok(summary);
         }
 
+        [HttpPut("{employeeId}")]
+        public async Task<ActionResult<EmployeeCompensationResponseDto>> UpdateAccountDetails(
+            string employeeId,
+            [FromBody] EmployeeCompensationUpdateDto request,
+            CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            try
+            {
+                var response = await _compensationService.UpdateAccountDetailsAsync(employeeId, request, cancellationToken);
+                return Ok(response);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Unable to update compensation account for employee {EmployeeId}", employeeId);
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("{employeeId}/bonuses")]
         public async Task<ActionResult<IEnumerable<EmployeeBonusResponseDto>>> AddBonuses(
             string employeeId,

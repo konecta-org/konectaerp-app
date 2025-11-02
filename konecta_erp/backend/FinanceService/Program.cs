@@ -1,4 +1,6 @@
+using FinanceService.BackgroundServices;
 using FinanceService.Data;
+using FinanceService.Messaging;
 using FinanceService.Profiles;
 using FinanceService.Repositories;
 using FinanceService.Services;
@@ -33,6 +35,9 @@ builder.Services.AddScoped<IPayrollRepository, PayrollRepository>();
 builder.Services.AddScoped<IFinanceSummaryService, FinanceSummaryService>();
 builder.Services.AddScoped<IEmployeeCompensationRepository, EmployeeCompensationRepository>();
 builder.Services.AddScoped<IEmployeeCompensationService, EmployeeCompensationService>();
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
+builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
+builder.Services.AddHostedService<CompensationEventsConsumer>();
 
 builder.Services.AddCors(options =>
 {
@@ -60,7 +65,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("v1/swagger.json", "Konecta ERP - Finance Service v1");
+        c.RoutePrefix = "swagger";
+    });
 }
 
 app.UseCors("AllowAll");

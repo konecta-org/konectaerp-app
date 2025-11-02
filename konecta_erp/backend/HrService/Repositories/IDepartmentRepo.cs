@@ -10,6 +10,7 @@ namespace HrService.Repositories
         Task AddDepartmentAsync(Department department);
         Task UpdateDepartmentAsync(Department department);
         Task<bool> DeleteDepartmentAsync(Guid id);
+        Task<bool> AssignManagerAsync(Guid departmentId, Guid employeeId);
         Task<bool> SaveChangesAsync();
     }
 }

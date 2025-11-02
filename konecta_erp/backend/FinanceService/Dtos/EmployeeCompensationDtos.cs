@@ -141,4 +141,36 @@ namespace FinanceService.Dtos
         DateTime UpdatedAt,
         IEnumerable<EmployeeBonusResponseDto> RecentBonuses,
         IEnumerable<EmployeeDeductionResponseDto> RecentDeductions);
+
+    public class EmployeeCompensationUpdateDto
+    {
+        [MaxLength(64)]
+        public string? EmployeeNumber { get; set; }
+
+        [MaxLength(128)]
+        public string? Department { get; set; }
+
+        [MaxLength(128)]
+        public string? JobTitle { get; set; }
+
+        [Range(0, double.MaxValue)]
+        public decimal BaseSalary { get; set; }
+
+        [MaxLength(16)]
+        public string Currency { get; set; } = "USD";
+
+        public DateTime EffectiveFrom { get; set; } = DateTime.UtcNow.Date;
+
+        [MaxLength(128)]
+        public string? BankName { get; set; }
+
+        [MaxLength(64)]
+        public string? BankAccountNumber { get; set; }
+
+        [MaxLength(64)]
+        public string? BankRoutingNumber { get; set; }
+
+        [MaxLength(64)]
+        public string? Iban { get; set; }
+    }
 }

@@ -21,6 +21,13 @@ namespace HrService.Dtos
         [Required, MaxLength(100)]
         public string Position { get; set; } = string.Empty;
 
+        [Phone]
+        [MaxLength(32)]
+        public string? PhoneNumber { get; set; }
+
+        [Range(0, double.MaxValue)]
+        public decimal Salary { get; set; }
+
         [Required]
         public Guid DepartmentId { get; set; }
 

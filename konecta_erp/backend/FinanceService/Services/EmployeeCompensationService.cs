@@ -119,6 +119,30 @@ namespace FinanceService.Services
             return _mapper.Map<IEnumerable<EmployeeDeductionResponseDto>>(entities);
         }
 
+        public async Task<EmployeeCompensationResponseDto> UpdateAccountDetailsAsync(string employeeId, EmployeeCompensationUpdateDto request, CancellationToken cancellationToken = default)
+        {
+            var account = await _repository.GetByEmployeeIdAsync(employeeId, includeAdjustments: false, cancellationToken)
+                ?? throw new InvalidOperationException($"Compensation account for employee '{employeeId}' does not exist.");
+
+            account.EmployeeNumber = string.IsNullOrWhiteSpace(request.EmployeeNumber) ? null : request.EmployeeNumber.Trim();
+            account.Department = string.IsNullOrWhiteSpace(request.Department) ? null : request.Department.Trim();
+            account.JobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? null : request.JobTitle.Trim();
+            account.BaseSalary = RoundCurrency(request.BaseSalary);
+            account.Currency = string.IsNullOrWhiteSpace(request.Currency) ? account.Currency : request.Currency.Trim();
+            account.EffectiveFrom = request.EffectiveFrom;
+            account.BankName = string.IsNullOrWhiteSpace(request.BankName) ? null : request.BankName.Trim();
+            account.BankAccountNumber = string.IsNullOrWhiteSpace(request.BankAccountNumber) ? null : request.BankAccountNumber.Trim();
+            account.BankRoutingNumber = string.IsNullOrWhiteSpace(request.BankRoutingNumber) ? null : request.BankRoutingNumber.Trim();
+            account.Iban = string.IsNullOrWhiteSpace(request.Iban) ? null : request.Iban.Trim();
+            account.UpdatedAt = DateTime.UtcNow;
+
+            _repository.UpdateAccount(account);
+            await _repository.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Updated compensation account details for employee {EmployeeId}", employeeId);
+            return await BuildResponseAsync(employeeId, cancellationToken);
+        }
+
         private async Task<EmployeeCompensationResponseDto> BuildResponseAsync(string employeeId, CancellationToken cancellationToken)
         {
             var account = await _repository.GetByEmployeeIdAsync(employeeId, includeAdjustments: false, cancellationToken)

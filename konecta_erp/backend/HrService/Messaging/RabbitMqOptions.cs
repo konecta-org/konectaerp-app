@@ -16,5 +16,8 @@ namespace HrService.Messaging
         public string EmployeeTerminatedRoutingKey { get; set; } = "hr.employee.terminated";
         public string UserProvisionedQueue { get; set; } = "hr.user-provisioned";
         public string UserProvisionedRoutingKey { get; set; } = "auth.user.provisioned";
+        public string FinanceCompensationProvisionedRoutingKey { get; set; } = "finance.compensation.provisioned";
+        public string FinanceCompensationBonusesRoutingKey { get; set; } = "finance.compensation.bonuses";
+        public string FinanceCompensationDeductionsRoutingKey { get; set; } = "finance.compensation.deductions";
     }
 }

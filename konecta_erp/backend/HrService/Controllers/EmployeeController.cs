@@ -79,6 +79,8 @@ namespace HrService.Controllers
 
             var employee = _mapper.Map<Employee>(request);
             employee.Department = department;
+            employee.PhoneNumber = request.PhoneNumber?.Trim();
+            employee.Salary = Math.Round(request.Salary, 2, MidpointRounding.AwayFromZero);
 
             await _employeeRepo.AddEmployeeAsync(employee);
             await _employeeRepo.SaveChangesAsync();
@@ -136,11 +138,100 @@ namespace HrService.Controllers
             _mapper.Map(request, employee);
             employee.Department = department;
             employee.UpdatedAt = DateTime.UtcNow;
+            employee.PhoneNumber = request.PhoneNumber?.Trim();
+            employee.Salary = Math.Round(request.Salary, 2, MidpointRounding.AwayFromZero);
 
             await _employeeRepo.UpdateEmployeeAsync(employee);
             await _employeeRepo.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        [HttpPost("{id:guid}/bonuses")]
+        public async Task<IActionResult> IssueBonuses(Guid id, [FromBody] IssueEmployeeBonusesDto request, CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            if (request.Bonuses.Count == 0)
+            {
+                ModelState.AddModelError(nameof(request.Bonuses), "At least one bonus entry is required.");
+                return ValidationProblem(ModelState);
+            }
+
+            var employee = await _employeeRepo.GetEmployeeByIdAsync(id, includeDepartment: true);
+            if (employee == null)
+            {
+                return NotFound();
+            }
+
+            var bonusItems = request.Bonuses.Select(b => new EmployeeCompensationBonusItem(
+                b.BonusType,
+                Math.Round(b.Amount, 2, MidpointRounding.AwayFromZero),
+                b.AwardedOn,
+                b.Period,
+                b.Reference,
+                string.IsNullOrWhiteSpace(b.AwardedBy) ? request.IssuedBy : b.AwardedBy,
+                b.Notes,
+                b.SourceSystem)).ToList();
+
+            var bonusEvent = new EmployeeCompensationBonusesIssuedEvent(
+                employee.Id,
+                employee.FullName,
+                bonusItems,
+                DateTime.UtcNow,
+                request.IssuedBy);
+
+            await _eventPublisher.PublishAsync(_rabbitOptions.FinanceCompensationBonusesRoutingKey, bonusEvent, cancellationToken);
+            _logger.LogInformation("Published {BonusCount} bonuses for employee {EmployeeId}.", bonusItems.Count, employee.Id);
+
+            return Accepted();
+        }
+
+        [HttpPost("{id:guid}/deductions")]
+        public async Task<IActionResult> IssueDeductions(Guid id, [FromBody] IssueEmployeeDeductionsDto request, CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            if (request.Deductions.Count == 0)
+            {
+                ModelState.AddModelError(nameof(request.Deductions), "At least one deduction entry is required.");
+                return ValidationProblem(ModelState);
+            }
+
+            var employee = await _employeeRepo.GetEmployeeByIdAsync(id, includeDepartment: true);
+            if (employee == null)
+            {
+                return NotFound();
+            }
+
+            var deductionItems = request.Deductions.Select(d => new EmployeeCompensationDeductionItem(
+                d.DeductionType,
+                Math.Round(d.Amount, 2, MidpointRounding.AwayFromZero),
+                d.AppliedOn,
+                d.Period,
+                d.Reference,
+                string.IsNullOrWhiteSpace(d.AppliedBy) ? request.IssuedBy : d.AppliedBy,
+                d.Notes,
+                d.SourceSystem,
+                d.IsRecurring)).ToList();
+
+            var deductionEvent = new EmployeeCompensationDeductionsIssuedEvent(
+                employee.Id,
+                employee.FullName,
+                deductionItems,
+                DateTime.UtcNow,
+                request.IssuedBy);
+
+            await _eventPublisher.PublishAsync(_rabbitOptions.FinanceCompensationDeductionsRoutingKey, deductionEvent, cancellationToken);
+            _logger.LogInformation("Published {DeductionCount} deductions for employee {EmployeeId}.", deductionItems.Count, employee.Id);
+
+            return Accepted();
         }
 
         [HttpPost("{id:guid}/fire")]
