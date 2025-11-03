@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace FinanceService.Dtos
@@ -121,26 +123,28 @@ namespace FinanceService.Dtos
         string? SourceSystem,
         bool IsRecurring);
 
-    public record EmployeeCompensationResponseDto(
-        string EmployeeId,
-        string EmployeeName,
-        string? EmployeeNumber,
-        string? Department,
-        string? JobTitle,
-        decimal BaseSalary,
-        string Currency,
-        DateTime EffectiveFrom,
-        string? BankName,
-        string? BankAccountNumber,
-        string? BankRoutingNumber,
-        string? Iban,
-        decimal TotalBonusesYtd,
-        decimal TotalDeductionsYtd,
-        decimal NetCompensationYtd,
-        DateTime CreatedAt,
-        DateTime UpdatedAt,
-        IEnumerable<EmployeeBonusResponseDto> RecentBonuses,
-        IEnumerable<EmployeeDeductionResponseDto> RecentDeductions);
+    public record class EmployeeCompensationResponseDto
+    {
+        public string EmployeeId { get; init; } = string.Empty;
+        public string EmployeeName { get; init; } = string.Empty;
+        public string? EmployeeNumber { get; init; }
+        public string? Department { get; init; }
+        public string? JobTitle { get; init; }
+        public decimal BaseSalary { get; init; }
+        public string Currency { get; init; } = "USD";
+        public DateTime EffectiveFrom { get; init; }
+        public string? BankName { get; init; }
+        public string? BankAccountNumber { get; init; }
+        public string? BankRoutingNumber { get; init; }
+        public string? Iban { get; init; }
+        public decimal TotalBonusesYtd { get; init; }
+        public decimal TotalDeductionsYtd { get; init; }
+        public decimal NetCompensationYtd { get; init; }
+        public DateTime CreatedAt { get; init; }
+        public DateTime UpdatedAt { get; init; }
+        public IEnumerable<EmployeeBonusResponseDto> RecentBonuses { get; init; } = Array.Empty<EmployeeBonusResponseDto>();
+        public IEnumerable<EmployeeDeductionResponseDto> RecentDeductions { get; init; } = Array.Empty<EmployeeDeductionResponseDto>();
+    }
 
     public class EmployeeCompensationUpdateDto
     {

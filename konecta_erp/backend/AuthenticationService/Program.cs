@@ -135,8 +135,8 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
-builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
+builder.Services.Configure<SendGridOptions>(builder.Configuration.GetSection(SendGridOptions.SectionName));
+builder.Services.AddTransient<IEmailSender, SendGridEmailSender>();
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
 builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
 builder.Services.AddSingleton<IEventPublisher, RabbitMqPublisher>();

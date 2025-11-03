@@ -58,20 +58,19 @@ namespace FinanceService.Repositories
             var startOfYear = new DateTime(year, 1, 1);
             var endOfYear = new DateTime(year, 12, 31, 23, 59, 59, DateTimeKind.Utc);
 
-            var bonusTotalTask = _context.EmployeeBonuses
+            var bonusTotal = await _context.EmployeeBonuses
                 .Where(bonus => bonus.EmployeeCompensationAccountId == accountId &&
                                 bonus.AwardedOn >= startOfYear &&
                                 bonus.AwardedOn <= endOfYear)
                 .SumAsync(bonus => bonus.Amount, cancellationToken);
 
-            var deductionTotalTask = _context.EmployeeDeductions
+            var deductionTotal = await _context.EmployeeDeductions
                 .Where(deduction => deduction.EmployeeCompensationAccountId == accountId &&
                                     deduction.AppliedOn >= startOfYear &&
                                     deduction.AppliedOn <= endOfYear)
                 .SumAsync(deduction => deduction.Amount, cancellationToken);
 
-            await Task.WhenAll(bonusTotalTask, deductionTotalTask);
-            return (bonusTotalTask.Result, deductionTotalTask.Result);
+            return (bonusTotal, deductionTotal);
         }
 
         public async Task<IEnumerable<EmployeeBonus>> GetRecentBonusesAsync(int accountId, int take, CancellationToken cancellationToken = default)

@@ -125,7 +125,7 @@ namespace AuthenticationService.BackgroundServices
             }
 
             var password = PasswordGenerator.Generate();
-            Console.WriteLine($"Generated password for {payload.WorkEmail}: {password}");
+            _logger.LogInformation("Generated temporary credentials for {Email}", payload.WorkEmail);
             var user = new ApplicationUser
             {
                 UserName = payload.WorkEmail,
@@ -148,7 +148,6 @@ namespace AuthenticationService.BackgroundServices
             // try
             // {
             //     await emailSender.SendEmployeeCredentialsAsync(payload.PersonalEmail, payload.FullName, payload.WorkEmail, password);
-            //     _logger.LogInformation("Sent credentials email to {PersonalEmail}.", payload.PersonalEmail);
             // }
             // catch (Exception ex)
             // {
