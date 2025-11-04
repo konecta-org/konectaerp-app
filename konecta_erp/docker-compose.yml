@@ -6,12 +6,27 @@ services:
     container_name: sqlserver
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_PID: Developer
-      SA_PASSWORD: "YourStrong!Passw0rd"
+      MSSQL_PID: fathy
+      SA_PASSWORD: "2028"
     ports:
       - "1433:1433"
     volumes:
       - sqlserver-data:/var/opt/mssql
+    networks:
+      - erp-network
+
+  sqlserver-seed:
+    image: mcr.microsoft.com/mssql-tools
+    container_name: sqlserver-seed
+    depends_on:
+      sqlserver:
+        condition: service_started
+    environment:
+      SA_PASSWORD: "YourStrong!Passw0rd"
+    volumes:
+      - ./docker/sqlserver:/scripts:ro
+    entrypoint: ["/bin/bash", "-c", "sleep 20 && /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P \"$SA_PASSWORD\" -d master -i /scripts/create-databases.sql"]
+    restart: "no"
     networks:
       - erp-network
 
@@ -129,10 +144,14 @@ services:
       SPRING__CLOUD__CONFIG__FAILFAST: "true"
       Consul__Host: http://consul:8500
     depends_on:
-      - sqlserver
-      - rabbitmq
-      - mailhog
-      - consul
+      sqlserver-seed:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_started
+      mailhog:
+        condition: service_started
+      consul:
+        condition: service_started
     ports:
       - "7280:7280"
     networks:
@@ -150,9 +169,12 @@ services:
       SPRING__CLOUD__CONFIG__FAILFAST: "true"
       Consul__Host: http://consul:8500
     depends_on:
-      - sqlserver
-      - rabbitmq
-      - consul
+      sqlserver-seed:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_started
+      consul:
+        condition: service_started
     ports:
       - "5005:5005"
     networks:
@@ -170,8 +192,10 @@ services:
       SPRING__CLOUD__CONFIG__FAILFAST: "true"
       Consul__Host: http://consul:8500
     depends_on:
-      - sqlserver
-      - consul
+      sqlserver-seed:
+        condition: service_completed_successfully
+      consul:
+        condition: service_started
     ports:
       - "5020:5020"
     networks:
@@ -189,8 +213,10 @@ services:
       SPRING__CLOUD__CONFIG__FAILFAST: "true"
       Consul__Host: http://consul:8500
     depends_on:
-      - sqlserver
-      - consul
+      sqlserver-seed:
+        condition: service_completed_successfully
+      consul:
+        condition: service_started
     ports:
       - "5003:5003"
     networks:
@@ -208,9 +234,12 @@ services:
       SPRING__CLOUD__CONFIG__FAILFAST: "true"
       Consul__Host: http://consul:8500
     depends_on:
-      - sqlserver
-      - rabbitmq
-      - consul
+      sqlserver-seed:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_started
+      consul:
+        condition: service_started
     ports:
       - "5078:5078"
     networks:

@@ -75,6 +75,12 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAll");
 app.MapControllers();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 app.MapGet("/system/health", () =>
     Results.Ok(new
     {

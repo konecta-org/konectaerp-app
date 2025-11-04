@@ -1,0 +1,14 @@
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'Konecta_Auth')
+    CREATE DATABASE [Konecta_Auth];
+
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'Konecta_Hr')
+    CREATE DATABASE [Konecta_Hr];
+
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'Konecta_Inventory')
+    CREATE DATABASE [Konecta_Inventory];
+
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'Konecta_Finance')
+    CREATE DATABASE [Konecta_Finance];
+
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'Konecta_UserManagement')
+    CREATE DATABASE [Konecta_UserManagement];
