@@ -7,7 +7,7 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Developer
-      SA_PASSWORD: "konecta2025"
+      SA_PASSWORD: "YourStrong!Passw0rd"
     ports:
       - "1433:1433"
     volumes:
@@ -67,7 +67,9 @@ services:
       dockerfile: Dockerfile
     container_name: api-gateway
     environment:
-      CONFIG_SERVER_URI: http://config-server:8888
+      SPRING_APPLICATION_NAME: api-gateway
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      SPRING_CLOUD_CONFIG_FAILFAST: "true"
       CONSUL_HOST: consul
       CONSUL_PORT: 8500
       CONSUL_SERVICE_HOST: api-gateway
@@ -96,7 +98,9 @@ services:
       dockerfile: Dockerfile
     container_name: reporting-service
     environment:
-      CONFIG_SERVER_URI: http://config-server:8888
+      SPRING_APPLICATION_NAME: reporting-service
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      SPRING_CLOUD_CONFIG_FAILFAST: "true"
       CONSUL_HOST: consul
       CONSUL_PORT: 8500
       CONSUL_SERVICE_HOST: reporting-service
@@ -120,15 +124,10 @@ services:
     container_name: authentication-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=Konecta_Auth;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;"
-      RabbitMq__HostName: rabbitmq
-      RabbitMq__Port: 5672
-      Email__SmtpHost: mailhog
+      SPRING__APPLICATION__NAME: authentication-service
+      SPRING__CLOUD__CONFIG__URI: http://config-server:8888
+      SPRING__CLOUD__CONFIG__FAILFAST: "true"
       Consul__Host: http://consul:8500
-      ServiceConfig__Host: 0.0.0.0
-      ServiceConfig__Port: 7280
-      ServiceConfig__Scheme: http
-      ServiceConfig__RegisterWithConsul: "true"
     depends_on:
       - sqlserver
       - rabbitmq
@@ -146,13 +145,10 @@ services:
     container_name: hr-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=Konecta_Hr;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;"
-      RabbitMq__HostName: rabbitmq
-      RabbitMq__Port: 5672
+      SPRING__APPLICATION__NAME: hr-service
+      SPRING__CLOUD__CONFIG__URI: http://config-server:8888
+      SPRING__CLOUD__CONFIG__FAILFAST: "true"
       Consul__Host: http://consul:8500
-      ServiceConfig__Host: 0.0.0.0
-      ServiceConfig__Port: 5005
-      ServiceConfig__RegisterWithConsul: "true"
     depends_on:
       - sqlserver
       - rabbitmq
@@ -169,11 +165,10 @@ services:
     container_name: inventory-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=Konecta_Inventory;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;"
+      SPRING__APPLICATION__NAME: inventory-service
+      SPRING__CLOUD__CONFIG__URI: http://config-server:8888
+      SPRING__CLOUD__CONFIG__FAILFAST: "true"
       Consul__Host: http://consul:8500
-      ServiceConfig__Host: 0.0.0.0
-      ServiceConfig__Port: 5020
-      ServiceConfig__RegisterWithConsul: "true"
     depends_on:
       - sqlserver
       - consul
@@ -189,11 +184,10 @@ services:
     container_name: finance-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=Konecta_Finance;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;"
+      SPRING__APPLICATION__NAME: finance-service
+      SPRING__CLOUD__CONFIG__URI: http://config-server:8888
+      SPRING__CLOUD__CONFIG__FAILFAST: "true"
       Consul__Host: http://consul:8500
-      ServiceConfig__Host: 0.0.0.0
-      ServiceConfig__Port: 5003
-      ServiceConfig__RegisterWithConsul: "true"
     depends_on:
       - sqlserver
       - consul
@@ -209,13 +203,10 @@ services:
     container_name: user-management-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=Konecta_UserManagement;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;"
-      RabbitMq__HostName: rabbitmq
-      RabbitMq__Port: 5672
+      SPRING__APPLICATION__NAME: user-management-service
+      SPRING__CLOUD__CONFIG__URI: http://config-server:8888
+      SPRING__CLOUD__CONFIG__FAILFAST: "true"
       Consul__Host: http://consul:8500
-      ServiceConfig__Host: 0.0.0.0
-      ServiceConfig__Port: 5078
-      ServiceConfig__RegisterWithConsul: "true"
     depends_on:
       - sqlserver
       - rabbitmq

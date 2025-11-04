@@ -10,8 +10,10 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SharedContracts.ServiceDiscovery;
 using System.Text;
+using Steeltoe.Extensions.Configuration.ConfigServer;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddConfigServer(builder.Environment);
 builder.Services.AddConsulServiceDiscovery(builder.Configuration);
 
 // Add services to the container

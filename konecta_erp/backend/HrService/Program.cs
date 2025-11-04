@@ -6,8 +6,10 @@ using HrService.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using SharedContracts.ServiceDiscovery;
+using Steeltoe.Extensions.Configuration.ConfigServer;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddConfigServer(builder.Environment);
 builder.Services.AddConsulServiceDiscovery(builder.Configuration);
 
 builder.Services.AddControllers();

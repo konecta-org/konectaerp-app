@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using SharedContracts.ServiceDiscovery;
+using Steeltoe.Extensions.Configuration.ConfigServer;
 using UserManagementService.BackgroundServices;
 using UserManagementService.Data;
 using UserManagementService.Messaging;
@@ -9,6 +10,7 @@ using UserManagementService.Repositories;
 using UserManagementService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddConfigServer(builder.Environment);
 builder.Services.AddConsulServiceDiscovery(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
