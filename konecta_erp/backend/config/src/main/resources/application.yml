@@ -1,0 +1,40 @@
+server:
+  port: ${SERVER_PORT:8888}
+
+spring:
+  application:
+    name: config-server
+  profiles:
+    active: native
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: classpath:/config
+      discovery:
+        enabled: ${CONFIG_DISCOVERY_ENABLED:false}
+        service-id: config-server
+    consul:
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:8500}
+      discovery:
+        register: ${CONSUL_REGISTER:true}
+        service-name: ${spring.application.name}
+        instance-id: ${spring.application.name}-${random.value}
+        health-check-path: /actuator/health
+        health-check-interval: 15s
+        acl-token: ${CONSUL_ACL_TOKEN:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,env,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+      roles: ACTUATOR
+
+logging:
+  level:
+    org.springframework.cloud.config: INFO

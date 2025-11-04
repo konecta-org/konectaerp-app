@@ -1,0 +1,41 @@
+server:
+  port: ${SERVER_PORT:8085}
+
+spring:
+  application:
+    name: reporting-service
+  cloud:
+    consul:
+      host: ${CONSUL_HOST:consul}
+      port: ${CONSUL_PORT:8500}
+      discovery:
+        register: ${CONSUL_REGISTER:true}
+        service-name: ${spring.application.name}
+        instance-id: ${spring.application.name}-${random.value}
+        hostname: ${CONSUL_SERVICE_HOST:reporting-service}
+        prefer-ip-address: false
+        health-check-path: /actuator/health
+        health-check-interval: 15s
+      config:
+        enabled: false
+
+services:
+  finance:
+    url: ${FINANCE_SERVICE_URI:http://finance-service:5003}
+  hr:
+    url: ${HR_SERVICE_URI:http://hr-service:5005}
+  inventory:
+    url: ${INVENTORY_SERVICE_URI:http://inventory-service:5020}
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -1,0 +1,25 @@
+ConnectionStrings:
+  DefaultConnection: ${USER_MGMT_DB_CONNECTION:Server=sqlserver,1433;Database=Konecta_UserManagement;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;}
+
+RabbitMq:
+  HostName: ${RABBITMQ_HOST:rabbitmq}
+  Port: ${RABBITMQ_PORT:5672}
+  UserName: ${RABBITMQ_USER:guest}
+  Password: ${RABBITMQ_PASSWORD:guest}
+  VirtualHost: ${RABBITMQ_VHOST:/}
+  Exchange: konecta.erp
+  UserEventsQueue: user-management.user-events
+  UserProvisionedRoutingKey: auth.user.provisioned
+  UserDeactivatedRoutingKey: auth.user.deactivated
+  UserResignedRoutingKey: auth.user.resigned
+  UserTerminatedRoutingKey: auth.user.terminated
+
+Consul:
+  Host: ${CONSUL_ENDPOINT:http://consul:8500}
+
+ServiceConfig:
+  ServiceName: user-management-service
+  Host: 0.0.0.0
+  Port: 5078
+  RegisterWithConsul: true
+  FailFast: false

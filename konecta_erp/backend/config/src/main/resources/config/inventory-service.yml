@@ -1,0 +1,12 @@
+ConnectionStrings:
+  DefaultConnection: ${INVENTORY_DB_CONNECTION:Server=sqlserver,1433;Database=Konecta_Inventory;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;}
+
+Consul:
+  Host: ${CONSUL_ENDPOINT:http://consul:8500}
+
+ServiceConfig:
+  ServiceName: inventory-service
+  Host: 0.0.0.0
+  Port: 5020
+  RegisterWithConsul: true
+  FailFast: false

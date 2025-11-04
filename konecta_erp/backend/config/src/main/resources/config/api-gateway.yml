@@ -1,0 +1,146 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    consul:
+      host: ${CONSUL_HOST:consul}
+      port: ${CONSUL_PORT:8500}
+      discovery:
+        register: ${CONSUL_REGISTER:true}
+        service-name: ${spring.application.name}
+        instance-id: ${spring.application.name}-${random.value}
+        health-check-path: /actuator/health
+        health-check-interval: 15s
+      config:
+        enabled: false
+    config:
+      fail-fast: true
+      retry:
+        max-attempts: 5
+        initial-interval: 2000
+        multiplier: 1.5
+        max-interval: 8000
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 10s
+        ssl:
+          use-insecure-trust-manager: true
+      routes:
+        - id: authentication-service
+          uri: ${upstreams.authentication}
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: authenticationServiceCircuitBreaker
+                fallbackUri: forward:/fallback/authentication-service
+        - id: hr-service
+          uri: ${upstreams.hr}
+          predicates:
+            - Path=/hr/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: hrServiceCircuitBreaker
+                fallbackUri: forward:/fallback/hr-service
+        - id: user-management-service
+          uri: ${upstreams.userManagement}
+          predicates:
+            - Path=/users/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: userManagementServiceCircuitBreaker
+                fallbackUri: forward:/fallback/user-management-service
+        - id: inventory-service
+          uri: ${upstreams.inventory}
+          predicates:
+            - Path=/inventory/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: inventoryServiceCircuitBreaker
+                fallbackUri: forward:/fallback/inventory-service
+        - id: finance-service
+          uri: ${upstreams.finance}
+          predicates:
+            - Path=/finance/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: financeServiceCircuitBreaker
+                fallbackUri: forward:/fallback/finance-service
+        - id: reporting-service
+          uri: ${upstreams.reporting}
+          predicates:
+            - Path=/reports/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: reportingServiceCircuitBreaker
+                fallbackUri: forward:/fallback/reporting-service
+
+upstreams:
+  authentication: ${AUTH_SERVICE_URI:http://authentication-service:7280}
+  hr: ${HR_SERVICE_URI:http://hr-service:5005}
+  userManagement: ${USER_MANAGEMENT_SERVICE_URI:http://user-management-service:5078}
+  inventory: ${INVENTORY_SERVICE_URI:http://inventory-service:5020}
+  finance: ${FINANCE_SERVICE_URI:http://finance-service:5003}
+  reporting: ${REPORTING_SERVICE_URI:http://reporting-service:8085}
+
+management:
+  server:
+    port: ${MANAGEMENT_PORT:8081}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 10s
+        minimumNumberOfCalls: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+    instances:
+      authenticationServiceCircuitBreaker:
+        base-config: default
+      hrServiceCircuitBreaker:
+        base-config: default
+      userManagementServiceCircuitBreaker:
+        base-config: default
+      inventoryServiceCircuitBreaker:
+        base-config: default
+      financeServiceCircuitBreaker:
+        base-config: default
+      reportingServiceCircuitBreaker:
+        base-config: default
+      defaultCircuitBreaker:
+        base-config: default
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
