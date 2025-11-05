@@ -25,8 +25,7 @@ namespace UserManagementService.Dtos
         [MaxLength(128)]
         public string? JobTitle { get; set; }
 
-        [MaxLength(64)]
-        public string Role { get; set; } = "Employee";
+        public List<int> RoleIds { get; set; } = new();
 
         [MaxLength(32)]
         public string Status { get; set; } = "Active";

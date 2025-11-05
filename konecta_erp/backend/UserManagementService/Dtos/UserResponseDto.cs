@@ -1,5 +1,7 @@
 namespace UserManagementService.Dtos
 {
+    public record UserAssignedRoleDto(int RoleId, string Name, bool IsSystemDefault);
+
     public record UserResponseDto(
         string Id,
         string Email,
@@ -8,7 +10,8 @@ namespace UserManagementService.Dtos
         string? LastName,
         string? Department,
         string? JobTitle,
-        string Role,
+        string PrimaryRole,
+        IReadOnlyCollection<UserAssignedRoleDto> Roles,
         string Status,
         string? PhoneNumber,
         string? ManagerId,

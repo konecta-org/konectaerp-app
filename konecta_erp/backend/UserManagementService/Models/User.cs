@@ -33,9 +33,6 @@ namespace UserManagementService.Models
         [MaxLength(128)]
         public string? JobTitle { get; set; }
 
-        [MaxLength(64)]
-        public string Role { get; set; } = "Employee";
-
         [MaxLength(32)]
         public string Status { get; set; } = "Active";
 
@@ -59,6 +56,8 @@ namespace UserManagementService.Models
 
         [Timestamp]
         public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+
+        public ICollection<UserRole>? UserRoles { get; set; }
 
         public void NormalizeEmail()
         {

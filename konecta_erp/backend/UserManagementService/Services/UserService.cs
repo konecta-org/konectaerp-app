@@ -9,12 +9,18 @@ namespace UserManagementService.Services
     public class UserService : IUserService
     {
         private readonly IUserRepository _repository;
+        private readonly IRoleRepository _roleRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<UserService> _logger;
 
-        public UserService(IUserRepository repository, IMapper mapper, ILogger<UserService> logger)
+        public UserService(
+            IUserRepository repository,
+            IRoleRepository roleRepository,
+            IMapper mapper,
+            ILogger<UserService> logger)
         {
             _repository = repository;
+            _roleRepository = roleRepository;
             _mapper = mapper;
             _logger = logger;
         }
@@ -40,10 +46,6 @@ namespace UserManagementService.Services
 
             var user = _mapper.Map<User>(dto);
             user.Id = string.IsNullOrWhiteSpace(dto.ExternalUserId) ? Guid.NewGuid().ToString() : dto.ExternalUserId;
-            if (string.IsNullOrWhiteSpace(user.Role))
-            {
-                user.Role = "Employee";
-            }
             if (string.IsNullOrWhiteSpace(user.Status))
             {
                 user.Status = "Active";
@@ -54,6 +56,7 @@ namespace UserManagementService.Services
             user.CreatedAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
             EnsureNameComponents(user);
+            await ApplyRoleAssignmentsAsync(user, dto.RoleIds, dto.CreatedBy, cancellationToken);
 
             await _repository.AddAsync(user, cancellationToken);
             await _repository.SaveChangesAsync(cancellationToken);
@@ -91,14 +94,59 @@ namespace UserManagementService.Services
                 return false;
             }
 
-            user.Role = dto.NewRole.Trim();
+            var targetRole = await _roleRepository.GetByNameAsync(dto.NewRole.Trim(), cancellationToken: cancellationToken);
+            if (targetRole == null)
+            {
+                throw new InvalidOperationException($"Role '{dto.NewRole}' does not exist.");
+            }
+
+            await ApplyRoleAssignmentsAsync(user, new[] { targetRole.Id }, dto.ChangedBy, cancellationToken);
+
+            user.UpdatedAt = DateTime.UtcNow;
+            _repository.Update(user);
+            await _repository.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Changed role for user {UserId} to {Role}", id, targetRole.Name);
+            return true;
+        }
+
+        public async Task<bool> SetUserRolesAsync(string id, UserRoleAssignmentDto dto, CancellationToken cancellationToken = default)
+        {
+            var user = await _repository.GetByIdAsync(id, cancellationToken);
+            if (user == null || user.IsDeleted)
+            {
+                return false;
+            }
+
+            await ApplyRoleAssignmentsAsync(user, dto.RoleIds, dto.AssignedBy, cancellationToken);
             user.UpdatedAt = DateTime.UtcNow;
 
             _repository.Update(user);
             await _repository.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation("Changed role for user {UserId} to {Role}", id, dto.NewRole);
+            _logger.LogInformation("Updated roles for user {UserId}", id);
             return true;
+        }
+
+        public async Task<IReadOnlyCollection<RoleResponseDto>> GetUserRolesAsync(string id, CancellationToken cancellationToken = default)
+        {
+            var user = await _repository.GetByIdAsync(id, cancellationToken);
+            if (user == null || user.IsDeleted)
+            {
+                return Array.Empty<RoleResponseDto>();
+            }
+
+            var roles = user.UserRoles?
+                .Select(ur => new RoleResponseDto(
+                    ur.RoleId,
+                    ur.Role.Name,
+                    ur.Role.Description,
+                    ur.Role.IsSystemDefault,
+                    ur.Role.IsActive,
+                    Enumerable.Empty<PermissionResponseDto>(),
+                    0))
+                .ToList() ?? new List<RoleResponseDto>();
+
+            return roles;
         }
 
         public async Task<bool> UpdateStatusAsync(string id, UserStatusUpdateDto dto, CancellationToken cancellationToken = default)
@@ -210,6 +258,7 @@ namespace UserManagementService.Services
             if (user != null)
             {
                 UpdateExternalUser(user, email, fullName, role);
+                await ApplyRoleAssignmentsAsync(user, await ResolveRoleIdsFromNameAsync(role, cancellationToken), "External", cancellationToken);
                 _repository.Update(user);
                 await _repository.SaveChangesAsync(cancellationToken);
                 return user;
@@ -220,7 +269,7 @@ namespace UserManagementService.Services
             if (existing != null)
             {
                 UpdateExternalUser(existing, email, fullName, role);
-                existing.Id = existing.Id; // maintain existing id
+                await ApplyRoleAssignmentsAsync(existing, await ResolveRoleIdsFromNameAsync(role, cancellationToken), "External", cancellationToken);
                 _repository.Update(existing);
                 await _repository.SaveChangesAsync(cancellationToken);
                 return existing;
@@ -230,7 +279,7 @@ namespace UserManagementService.Services
             {
                 Email = email,
                 FullName = fullName,
-                Role = string.IsNullOrWhiteSpace(role) ? "Employee" : role,
+                RoleIds = await ResolveRoleIdsFromNameAsync(role, cancellationToken),
                 Status = "Active",
                 ExternalUserId = externalUserId
             };
@@ -243,11 +292,79 @@ namespace UserManagementService.Services
             user.Email = email.Trim();
             user.NormalizeEmail();
             user.FullName = fullName;
-            user.Role = string.IsNullOrWhiteSpace(role) ? user.Role : role.Trim();
             user.IsDeleted = false;
             user.Status = "Active";
             user.UpdatedAt = DateTime.UtcNow;
             EnsureNameComponents(user);
+        }
+
+        private async Task ApplyRoleAssignmentsAsync(User user, IEnumerable<int> roleIds, string? assignedBy, CancellationToken cancellationToken)
+        {
+            user.UserRoles ??= new List<UserRole>();
+            var distinctRoleIds = roleIds?.Distinct().ToList() ?? new List<int>();
+
+            if (distinctRoleIds.Count == 0)
+            {
+                // Fallback to first system default role if exists
+                var defaultRole = (await _roleRepository.GetAllAsync(false, cancellationToken))
+                    .FirstOrDefault(r => r.IsSystemDefault && r.IsActive);
+
+                if (defaultRole != null)
+                {
+                    distinctRoleIds.Add(defaultRole.Id);
+                }
+            }
+
+            if (distinctRoleIds.Count == 0)
+            {
+                user.UserRoles.Clear();
+                return;
+            }
+
+            var roles = await _roleRepository.GetByIdsAsync(distinctRoleIds, false, cancellationToken);
+            if (roles.Count != distinctRoleIds.Count)
+            {
+                var missing = distinctRoleIds.Except(roles.Select(r => r.Id)).ToArray();
+                throw new InvalidOperationException($"One or more roles do not exist: {string.Join(", ", missing)}");
+            }
+
+            var existingAssignments = user.UserRoles.ToList();
+            var toRemove = existingAssignments.Where(ur => !distinctRoleIds.Contains(ur.RoleId)).ToList();
+            foreach (var remove in toRemove)
+            {
+                user.UserRoles.Remove(remove);
+            }
+
+            var existingIds = user.UserRoles.Select(ur => ur.RoleId).ToHashSet();
+            foreach (var role in roles)
+            {
+                if (!existingIds.Contains(role.Id))
+                {
+                    user.UserRoles.Add(new UserRole
+                    {
+                        UserId = user.Id,
+                        RoleId = role.Id,
+                        AssignedAt = DateTime.UtcNow,
+                        AssignedBy = assignedBy
+                    });
+                }
+            }
+        }
+
+        private async Task<List<int>> ResolveRoleIdsFromNameAsync(string roleName, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(roleName))
+            {
+                return new List<int>();
+            }
+
+            var role = await _roleRepository.GetByNameAsync(roleName.Trim(), cancellationToken: cancellationToken);
+            if (role == null)
+            {
+                throw new InvalidOperationException($"Role '{roleName}' does not exist.");
+            }
+
+            return new List<int> { role.Id };
         }
 
         private static void EnsureNameComponents(User user)

@@ -16,7 +16,11 @@ namespace UserManagementService.Repositories
 
         public async Task<PagedResultDto<User>> GetPagedAsync(UserQueryParameters parameters, CancellationToken cancellationToken = default)
         {
-            var query = _context.Users.AsNoTracking().AsQueryable();
+            var query = _context.Users
+                .AsNoTracking()
+                .Include(user => user.UserRoles)!
+                    .ThenInclude(ur => ur.Role)
+                .AsQueryable();
 
             if (!parameters.IncludeDeleted)
             {
@@ -25,7 +29,8 @@ namespace UserManagementService.Repositories
 
             if (!string.IsNullOrWhiteSpace(parameters.Role))
             {
-                query = query.Where(user => user.Role == parameters.Role);
+                var roleName = parameters.Role.Trim();
+                query = query.Where(user => user.UserRoles!.Any(ur => ur.Role.Name == roleName));
             }
 
             if (!string.IsNullOrWhiteSpace(parameters.Department))
@@ -63,12 +68,18 @@ namespace UserManagementService.Repositories
 
         public Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
-            return _context.Users.FirstOrDefaultAsync(user => user.Id == id, cancellationToken);
+            return _context.Users
+                .Include(user => user.UserRoles)!
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(user => user.Id == id, cancellationToken);
         }
 
         public Task<User?> GetByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken = default)
         {
-            return _context.Users.FirstOrDefaultAsync(user => user.NormalizedEmail == normalizedEmail, cancellationToken);
+            return _context.Users
+                .Include(user => user.UserRoles)!
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(user => user.NormalizedEmail == normalizedEmail, cancellationToken);
         }
 
         public async Task AddAsync(User user, CancellationToken cancellationToken = default)
@@ -95,11 +106,12 @@ namespace UserManagementService.Repositories
             var lockedUsersTask = baseQuery.CountAsync(user => user.IsLocked && !user.IsDeleted, cancellationToken);
             var deletedUsersTask = baseQuery.CountAsync(user => user.IsDeleted, cancellationToken);
 
-            var roleCountsTask = baseQuery
-                .Where(user => !user.IsDeleted)
-                .GroupBy(user => user.Role)
-                .Select(group => new { group.Key, Count = group.Count() })
-                .ToDictionaryAsync(group => group.Key, group => group.Count, cancellationToken);
+            var roleCountsTask = _context.UserRoles
+                .AsNoTracking()
+                .Where(ur => !ur.User.IsDeleted)
+                .GroupBy(ur => ur.Role.Name)
+                .Select(group => new { Role = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(group => group.Role, group => group.Count, cancellationToken);
 
             var departmentCountsTask = baseQuery
                 .Where(user => !user.IsDeleted && user.Department != null && user.Department != string.Empty)

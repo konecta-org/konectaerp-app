@@ -92,6 +92,34 @@ namespace UserManagementService.Controllers
             return changed ? NoContent() : NotFound();
         }
 
+        [HttpGet("{id}/roles")]
+        public async Task<ActionResult<IEnumerable<RoleResponseDto>>> GetUserRoles(string id, CancellationToken cancellationToken)
+        {
+            var roles = await _userService.GetUserRolesAsync(id, cancellationToken);
+            if (roles.Count == 0)
+            {
+                var user = await _userService.GetByIdAsync(id, cancellationToken);
+                if (user == null || user.IsDeleted)
+                {
+                    return NotFound();
+                }
+            }
+
+            return Ok(roles);
+        }
+
+        [HttpPut("{id}/roles")]
+        public async Task<IActionResult> SetUserRoles(string id, [FromBody] UserRoleAssignmentDto request, CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            var updated = await _userService.SetUserRolesAsync(id, request, cancellationToken);
+            return updated ? NoContent() : NotFound();
+        }
+
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateStatus(string id, [FromBody] UserStatusUpdateDto request, CancellationToken cancellationToken)
         {

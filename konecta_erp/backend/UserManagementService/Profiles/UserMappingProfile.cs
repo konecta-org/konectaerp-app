@@ -9,25 +9,34 @@ namespace UserManagementService.Profiles
         public UserMappingProfile()
         {
             CreateMap<User, UserResponseDto>()
-                .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.FirstName))
-                .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName));
+                .ForMember(dest => dest.PrimaryRole, opt => opt.MapFrom(src =>
+                    src.UserRoles != null && src.UserRoles.Any()
+                        ? src.UserRoles.OrderByDescending(ur => ur.AssignedAt).First().Role.Name
+                        : "Unassigned"))
+                .ForMember(dest => dest.Roles, opt => opt.MapFrom(src =>
+                    src.UserRoles != null
+                        ? src.UserRoles.Select(ur =>
+                            new UserAssignedRoleDto(ur.RoleId, ur.Role.Name, ur.Role.IsSystemDefault)).ToList()
+                        : new List<UserAssignedRoleDto>()));
 
             CreateMap<UserCreateDto, User>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email.Trim()))
                 .ForMember(dest => dest.NormalizedEmail, opt => opt.Ignore())
-                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.Trim()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.Trim()))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.LastLoginAt, opt => opt.Ignore())
                 .ForMember(dest => dest.DeactivatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.RowVersion, opt => opt.Ignore());
+                .ForMember(dest => dest.RowVersion, opt => opt.Ignore())
+                .ForMember(dest => dest.UserRoles, opt => opt.Ignore());
 
             CreateMap<UserUpdateDto, User>()
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.Trim()))
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            CreateMap<Permission, PermissionResponseDto>();
         }
     }
 }

@@ -10,6 +10,8 @@ namespace UserManagementService.Services
         Task<User> CreateAsync(UserCreateDto dto, CancellationToken cancellationToken = default);
         Task<User?> UpdateAsync(string id, UserUpdateDto dto, CancellationToken cancellationToken = default);
         Task<bool> ChangeRoleAsync(string id, RoleChangeDto dto, CancellationToken cancellationToken = default);
+        Task<bool> SetUserRolesAsync(string id, UserRoleAssignmentDto dto, CancellationToken cancellationToken = default);
+        Task<IReadOnlyCollection<RoleResponseDto>> GetUserRolesAsync(string id, CancellationToken cancellationToken = default);
         Task<bool> UpdateStatusAsync(string id, UserStatusUpdateDto dto, CancellationToken cancellationToken = default);
         Task<bool> SoftDeleteAsync(string id, CancellationToken cancellationToken = default);
         Task<bool> RestoreAsync(string id, CancellationToken cancellationToken = default);
