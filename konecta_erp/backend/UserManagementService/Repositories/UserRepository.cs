@@ -19,7 +19,9 @@ namespace UserManagementService.Repositories
             var query = _context.Users
                 .AsNoTracking()
                 .Include(user => user.UserRoles)!
-                    .ThenInclude(ur => ur.Role)
+                    .ThenInclude(ur => ur.Role)!
+                        .ThenInclude(role => role.Permissions)!
+                            .ThenInclude(rp => rp.Permission)
                 .AsQueryable();
 
             if (!parameters.IncludeDeleted)
@@ -79,7 +81,9 @@ namespace UserManagementService.Repositories
         {
             return _context.Users
                 .Include(user => user.UserRoles)!
-                    .ThenInclude(ur => ur.Role)
+                    .ThenInclude(ur => ur.Role)!
+                        .ThenInclude(role => role.Permissions)!
+                            .ThenInclude(rp => rp.Permission)
                 .FirstOrDefaultAsync(user => user.Id == id, cancellationToken);
         }
 
@@ -87,7 +91,9 @@ namespace UserManagementService.Repositories
         {
             return _context.Users
                 .Include(user => user.UserRoles)!
-                    .ThenInclude(ur => ur.Role)
+                    .ThenInclude(ur => ur.Role)!
+                        .ThenInclude(role => role.Permissions)!
+                            .ThenInclude(rp => rp.Permission)
                 .FirstOrDefaultAsync(user => user.NormalizedEmail == normalizedEmail, cancellationToken);
         }
 

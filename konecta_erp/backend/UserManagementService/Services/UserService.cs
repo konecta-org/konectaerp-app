@@ -291,6 +291,40 @@ namespace UserManagementService.Services
             return await CreateAsync(dto, cancellationToken);
         }
 
+        public async Task<UserAuthorizationProfileDto?> GetAuthorizationProfileAsync(string id, CancellationToken cancellationToken = default)
+        {
+            var user = await _repository.GetByIdAsync(id, cancellationToken);
+            if (user == null || user.IsDeleted)
+            {
+                return null;
+            }
+
+            var roleIds = user.UserRoles?.Select(ur => ur.RoleId).Distinct().ToList() ?? new List<int>();
+            if (roleIds.Count == 0)
+            {
+                return new UserAuthorizationProfileDto(Array.Empty<string>(), Array.Empty<string>());
+            }
+
+            var roles = await _roleRepository.GetByIdsAsync(roleIds, includePermissions: true, cancellationToken);
+
+            var roleNames = roles
+                .Where(role => role.IsActive)
+                .Select(role => role.Name)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var permissions = roles
+                .Where(role => role.Permissions != null)
+                .SelectMany(role => role.Permissions!)
+                .Where(rp => rp.Permission != null && rp.Permission.IsActive)
+                .Select(rp => rp.Permission!.Name)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return new UserAuthorizationProfileDto(roleNames, permissions);
+        }
+
         private static void UpdateExternalUser(User user, string email, string fullName, string role)
         {
             user.Email = email.Trim();

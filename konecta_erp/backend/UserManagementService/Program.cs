@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using SharedContracts.Authorization;
+using SharedContracts.Configuration;
 using SharedContracts.Security;
 using SharedContracts.ServiceDiscovery;
 using Steeltoe.Extensions.Configuration.ConfigServer;
@@ -50,14 +52,22 @@ builder.Services.AddCors(options =>
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
 builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
 builder.Services.AddHostedService<UserEventsConsumer>();
+builder.Services.AddHostedService<AuthorizationSeederHostedService>();
 builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.Configure<ServiceAuthOptions>(builder.Configuration.GetSection(ServiceAuthOptions.SectionName));
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
         .RequireAuthenticatedUser()
         .Build();
+    options.AddPolicy("AdminOnly", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireRole(RoleConstants.SystemAdmin);
+    });
 });
+builder.Services.AddPermissionPolicies();
 
 var serviceConfig = builder.Configuration.GetSection("ServiceConfig");
 var serviceName = serviceConfig.GetValue<string>("ServiceName") ?? builder.Environment.ApplicationName;

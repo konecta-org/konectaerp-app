@@ -2,7 +2,9 @@ using AutoMapper;
 using FinanceService.Dtos;
 using FinanceService.Models;
 using FinanceService.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SharedContracts.Authorization;
 
 namespace FinanceService.Controllers
 {
@@ -22,6 +24,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = PermissionConstants.Finance.InvoicesRead)]
         public async Task<ActionResult<IEnumerable<InvoiceResponseDto>>> GetInvoices([FromQuery] string? status = null, [FromQuery] bool includeLines = false, CancellationToken cancellationToken = default)
         {
             var invoices = await _invoiceRepository.GetAllAsync(status, includeLines, cancellationToken);
@@ -29,6 +32,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpGet("{id:int}", Name = nameof(GetInvoiceById))]
+        [Authorize(Policy = PermissionConstants.Finance.InvoicesRead)]
         public async Task<ActionResult<InvoiceResponseDto>> GetInvoiceById(int id, [FromQuery] bool includeLines = true, CancellationToken cancellationToken = default)
         {
             var invoice = await _invoiceRepository.GetByIdAsync(id, includeLines, cancellationToken);
@@ -41,6 +45,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = PermissionConstants.Finance.InvoicesManage)]
         public async Task<ActionResult<InvoiceResponseDto>> CreateInvoice([FromBody] InvoiceUpsertDto request, CancellationToken cancellationToken = default)
         {
             if (await _invoiceRepository.InvoiceNumberExistsAsync(request.InvoiceNumber, null, cancellationToken))
@@ -63,6 +68,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Policy = PermissionConstants.Finance.InvoicesManage)]
         public async Task<IActionResult> UpdateInvoice(int id, [FromBody] InvoiceUpsertDto request, CancellationToken cancellationToken = default)
         {
             var existingInvoice = await _invoiceRepository.GetByIdAsync(id, includeLines: true, cancellationToken);
@@ -90,6 +96,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = PermissionConstants.Finance.InvoicesManage)]
         public async Task<IActionResult> DeleteInvoice(int id, CancellationToken cancellationToken = default)
         {
             var removed = await _invoiceRepository.DeleteAsync(id, cancellationToken);

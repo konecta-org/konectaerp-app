@@ -1,11 +1,12 @@
 ConnectionStrings:
-  DefaultConnection: Server=localhost;Database=Konecta_Auth;Trusted_Connection=True;TrustServerCertificate=True;
+  DefaultConnection: ${AUTH_DB_CONNECTION:Server=sqlserver,1433;Database=Konecta_Auth;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;}
+
 RabbitMq:
-  HostName: localhost
-  Port: 5672
-  UserName: guest
-  Password: guest
-  VirtualHost: /
+  HostName: ${RABBITMQ_HOST:rabbitmq}
+  Port: ${RABBITMQ_PORT:5672}
+  UserName: ${RABBITMQ_USER:guest}
+  Password: ${RABBITMQ_PASSWORD:guest}
+  VirtualHost: ${RABBITMQ_VHOST:/}
   Exchange: konecta.erp
   EmployeeCreatedQueue: auth.employee-created
   EmployeeCreatedRoutingKey: hr.employee.created
@@ -27,10 +28,10 @@ Email:
   Password: ${EMAIL_PASSWORD:}
 
 JwtSettings:
-  Issuer: KonectaERP
-  Audience: KonectaERPUsers
-  ExpirationMinutes: 60
-  RefreshTokenExpirationDays: 7
+  Issuer: ${JWT_ISSUER:KonectaERP}
+  Audience: ${JWT_AUDIENCE:KonectaERPUsers}
+  ExpirationMinutes: ${JWT_EXPIRATION_MINUTES:60}
+  RefreshTokenExpirationDays: ${JWT_REFRESH_DAYS:7}
   Keys:
     - Id: key-202501
       IsCurrent: true
@@ -86,12 +87,16 @@ JwtSettings:
         7QIDAQAB
         -----END PUBLIC KEY-----
 
+ServiceAuth:
+  SharedSecret: ${SERVICE_SHARED_SECRET:KonectaSharedSecret!}
+  UserManagementBaseUrl: ${USER_MANAGEMENT_BASE_URL:http://user-management-service:5078}
+
 Consul:
-  Host: http://localhost:8500
+  Host: ${CONSUL_ENDPOINT:http://consul:8500}
 
 ServiceConfig:
   ServiceName: authentication-service
-  Host: host.docker.internal
+  Host: 0.0.0.0
   Port: 7280
   Scheme: http
   RegisterWithConsul: true

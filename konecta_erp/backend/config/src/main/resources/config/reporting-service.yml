@@ -1,31 +1,36 @@
 server:
-  port: 8085
+  port: ${SERVER_PORT:8085}
 
 spring:
   application:
     name: reporting-service
   cloud:
     consul:
-      host: localhost
-      port: 8500
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:8500}
       discovery:
-        register: true
+        register: ${CONSUL_REGISTER:true}
         service-name: ${spring.application.name}
         instance-id: ${spring.application.name}-${random.value}
-        hostname: host.docker.internal
+        hostname: ${CONSUL_SERVICE_HOST:host.docker.internal}
         prefer-ip-address: false
         health-check-path: /actuator/health
         health-check-interval: 15s
       config:
         enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWT_JWKS_URI:http://authentication-service:7280/.well-known/jwks.json}
 
 services:
   finance:
-    url: http://localhost:5003
+    url: ${FINANCE_SERVICE_URI:http://localhost:5003}
   hr:
-    url: http://localhost:5005
+    url: ${HR_SERVICE_URI:http://localhost:5005}
   inventory:
-    url: http://localhost:5020
+    url: ${INVENTORY_SERVICE_URI:http://localhost:5020}
 
 feign:
   client:

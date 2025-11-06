@@ -18,6 +18,7 @@ namespace UserManagementService.Services
         Task<bool> TerminateAsync(string id, string? reason, CancellationToken cancellationToken = default);
         Task<UserSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default);
         Task<User> CreateOrUpdateFromExternalAsync(string externalUserId, string email, string fullName, string role, CancellationToken cancellationToken = default);
+        Task<UserAuthorizationProfileDto?> GetAuthorizationProfileAsync(string id, CancellationToken cancellationToken = default);
         Task<List<User>> GetAllUsersAsync(CancellationToken cancellationToken = default);
     }
 }

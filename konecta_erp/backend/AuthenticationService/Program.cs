@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Options;
+using SharedContracts.Configuration;
 using SharedContracts.ServiceDiscovery;
 using Steeltoe.Extensions.Configuration.ConfigServer;
 
@@ -79,6 +80,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddDefaultTokenProviders();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.Configure<ServiceAuthOptions>(builder.Configuration.GetSection(ServiceAuthOptions.SectionName));
 builder.Services.AddSingleton<IJwksProvider, JwksProvider>();
 builder.Services.AddSingleton<IConfigureOptions<JwtBearerOptions>, AuthServiceJwtBearerOptionsSetup>();
 builder.Services.AddAuthentication(options =>
@@ -131,6 +133,17 @@ builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(Rab
 builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
 builder.Services.AddSingleton<IEventPublisher, RabbitMqPublisher>();
 builder.Services.AddHostedService<EmployeeEventsConsumer>();
+builder.Services.AddHttpClient<IUserManagementClient, UserManagementClient>((sp, client) =>
+{
+    var options = sp.GetRequiredService<IOptions<ServiceAuthOptions>>().Value;
+    if (string.IsNullOrWhiteSpace(options.UserManagementBaseUrl))
+    {
+        throw new InvalidOperationException("ServiceAuth:UserManagementBaseUrl must be configured.");
+    }
+
+    client.BaseAddress = new Uri(options.UserManagementBaseUrl, UriKind.Absolute);
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 
 var serviceConfig = builder.Configuration.GetSection("ServiceConfig");
 var serviceName = serviceConfig.GetValue<string>("ServiceName") ?? builder.Environment.ApplicationName;

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,10 +45,7 @@ public static class JwtAuthenticationExtensions
         public void Configure(JwtBearerOptions options)
         {
             var settings = _options.Value;
-
-            options.RequireHttpsMetadata = settings.RequireHttpsMetadata;
-            options.SaveToken = true;
-            options.TokenValidationParameters = new TokenValidationParameters
+            var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
                 ValidIssuer = settings.Issuer,
@@ -62,10 +60,23 @@ public static class JwtAuthenticationExtensions
                 ValidateLifetime = true,
                 RequireSignedTokens = true,
                 ValidateIssuerSigningKey = true,
-                ClockSkew = TimeSpan.Zero,
-                IssuerSigningKeyResolver = (_, _, kid, _) =>
-                    _keyProvider.GetValidationKeys(kid).ToArray()
+                ClockSkew = TimeSpan.Zero
             };
+
+            options.RequireHttpsMetadata = settings.RequireHttpsMetadata;
+            options.SaveToken = true;
+            if (!string.IsNullOrWhiteSpace(settings.SecretKey))
+            {
+                tokenValidationParameters.IssuerSigningKey =
+                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.SecretKey));
+            }
+            else
+            {
+                tokenValidationParameters.IssuerSigningKeyResolver = (_, _, kid, _) =>
+                    _keyProvider.GetValidationKeys(kid).ToArray();
+            }
+
+            options.TokenValidationParameters = tokenValidationParameters;
         }
     }
 }

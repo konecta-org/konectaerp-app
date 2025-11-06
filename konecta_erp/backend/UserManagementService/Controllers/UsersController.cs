@@ -1,23 +1,31 @@
+using System.Security.Cryptography;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using SharedContracts.Authorization;
+using SharedContracts.Configuration;
 using UserManagementService.Dtos;
 using UserManagementService.Services;
 
 namespace UserManagementService.Controllers
 {
     [ApiController]
+    [Authorize(Policy = "AdminOnly")]
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
         private readonly IMapper _mapper;
         private readonly ILogger<UsersController> _logger;
+        private readonly ServiceAuthOptions _serviceAuthOptions;
 
-        public UsersController(IUserService userService, IMapper mapper, ILogger<UsersController> logger)
+        public UsersController(IUserService userService, IMapper mapper, ILogger<UsersController> logger, IOptions<ServiceAuthOptions> serviceAuthOptions)
         {
             _userService = userService;
             _mapper = mapper;
             _logger = logger;
+            _serviceAuthOptions = serviceAuthOptions.Value;
         }
 
         [HttpGet]
@@ -158,6 +166,44 @@ namespace UserManagementService.Controllers
         {
             var summary = await _userService.GetSummaryAsync(cancellationToken);
             return Ok(summary);
+        }
+
+        [HttpGet("{id}/authorizations")]
+        [AllowAnonymous]
+        public async Task<ActionResult<UserAuthorizationProfileDto>> GetAuthorizationProfile(string id, CancellationToken cancellationToken)
+        {
+            if (!Request.Headers.TryGetValue("X-Service-Token", out var tokenHeader))
+            {
+                return Unauthorized();
+            }
+
+            var providedToken = tokenHeader.FirstOrDefault();
+            if (!IsServiceTokenValid(providedToken))
+            {
+                return Unauthorized();
+            }
+
+            var profile = await _userService.GetAuthorizationProfileAsync(id, cancellationToken);
+            return profile == null ? NotFound() : Ok(profile);
+        }
+
+        private bool IsServiceTokenValid(string? providedToken)
+        {
+            if (string.IsNullOrWhiteSpace(_serviceAuthOptions.SharedSecret))
+            {
+                _logger.LogWarning("Service-to-service shared secret is not configured.");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(providedToken))
+            {
+                return false;
+            }
+
+            var providedBytes = System.Text.Encoding.UTF8.GetBytes(providedToken);
+            var expectedBytes = System.Text.Encoding.UTF8.GetBytes(_serviceAuthOptions.SharedSecret);
+            return providedBytes.Length == expectedBytes.Length &&
+                   CryptographicOperations.FixedTimeEquals(providedBytes, expectedBytes);
         }
     }
 }

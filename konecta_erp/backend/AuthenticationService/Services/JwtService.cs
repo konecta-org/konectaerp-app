@@ -5,6 +5,7 @@ using AuthenticationService.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using SharedContracts.Authorization;
 
 namespace AuthenticationService.Services;
 
@@ -24,7 +25,7 @@ public sealed class JwtService : IJwtService
         _logger = logger;
     }
 
-    public TokenResult GenerateToken(ApplicationUser user, IEnumerable<string> roles)
+    public TokenResult GenerateToken(ApplicationUser user, IEnumerable<string> roles, IEnumerable<string> permissions)
     {
         ArgumentNullException.ThrowIfNull(user);
 
@@ -68,6 +69,17 @@ public sealed class JwtService : IJwtService
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
             claims.Add(new Claim("roles", role));
+        }
+
+        var distinctPermissions = permissions?
+            .Where(permission => !string.IsNullOrWhiteSpace(permission))
+            .Select(permission => permission.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray() ?? Array.Empty<string>();
+
+        foreach (var permission in distinctPermissions)
+        {
+            claims.Add(new Claim(PermissionConstants.ClaimType, permission));
         }
 
         var handler = new JwtSecurityTokenHandler();

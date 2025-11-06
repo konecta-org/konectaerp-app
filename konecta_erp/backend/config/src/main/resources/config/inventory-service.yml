@@ -1,19 +1,19 @@
 ConnectionStrings:
-  DefaultConnection: Server=localhost;Database=Konecta_Inventory;Trusted_Connection=True;TrustServerCertificate=True;
+  DefaultConnection: ${INVENTORY_DB_CONNECTION:Server=sqlserver,1433;Database=Konecta_Inventory;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;}
 
 Consul:
-  Host: http://localhost:8500
+  Host: ${CONSUL_ENDPOINT:http://consul:8500}
 
 JwtSettings:
-  Issuer: KonectaERP
-  Audience: KonectaERPUsers
-  JwksUri: http://localhost:7280/.well-known/jwks.json
-  RequireHttpsMetadata: false
-  CacheDurationMinutes: 30
+  Issuer: ${JWT_ISSUER:KonectaERP}
+  Audience: ${JWT_AUDIENCE:KonectaERPUsers}
+  JwksUri: ${JWT_JWKS_URI:http://authentication-service:7280/.well-known/jwks.json}
+  RequireHttpsMetadata: ${JWT_REQUIRE_HTTPS:false}
+  CacheDurationMinutes: ${JWT_CACHE_MINUTES:30}
 
 ServiceConfig:
   ServiceName: inventory-service
-  Host: host.docker.internal
+  Host: 0.0.0.0
   Port: 5020
   RegisterWithConsul: true
   FailFast: false

@@ -17,15 +17,18 @@ namespace AuthenticationService.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IJwtService _jwtService;
+        private readonly IUserManagementClient _userManagementClient;
 
         public AuthController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            IJwtService jwtService)
+            IJwtService jwtService,
+            IUserManagementClient userManagementClient)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _jwtService = jwtService;
+            _userManagementClient = userManagementClient;
         }
 
         [HttpPost("register")]
@@ -94,7 +97,10 @@ namespace AuthenticationService.Controllers
                 });
 
             var roles = await _userManager.GetRolesAsync(user);
-            var token = _jwtService.GenerateToken(user, roles);
+            var authorizationProfile = await _userManagementClient.GetAuthorizationProfileAsync(user.Id, HttpContext.RequestAborted);
+            var aggregatedRoles = authorizationProfile?.Roles?.Count > 0 ? authorizationProfile.Roles : roles;
+            var aggregatedPermissions = authorizationProfile?.Permissions ?? Array.Empty<string>();
+            var token = _jwtService.GenerateToken(user, aggregatedRoles, aggregatedPermissions);
 
             return Ok(new GenericResponse
             {
@@ -105,7 +111,8 @@ namespace AuthenticationService.Controllers
                     KeyId = token.KeyId,
                     UserId = user.Id,
                     user.Email,
-                    Roles = roles
+                    Roles = aggregatedRoles,
+                    Permissions = aggregatedPermissions
                 },
                 Code = "200",
                 C_Message = "Login successful.",

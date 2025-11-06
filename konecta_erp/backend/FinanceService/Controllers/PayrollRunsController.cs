@@ -2,7 +2,9 @@ using AutoMapper;
 using FinanceService.Dtos;
 using FinanceService.Models;
 using FinanceService.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SharedContracts.Authorization;
 
 namespace FinanceService.Controllers
 {
@@ -22,6 +24,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = PermissionConstants.Finance.PayrollRead)]
         public async Task<ActionResult<IEnumerable<PayrollRunResponseDto>>> GetPayrollRuns([FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null, [FromQuery] bool includeEntries = false, CancellationToken cancellationToken = default)
         {
             var runs = await _payrollRepository.GetAllAsync(from, to, includeEntries, cancellationToken);
@@ -29,6 +32,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpGet("{id:int}", Name = nameof(GetPayrollRunById))]
+        [Authorize(Policy = PermissionConstants.Finance.PayrollRead)]
         public async Task<ActionResult<PayrollRunResponseDto>> GetPayrollRunById(int id, [FromQuery] bool includeEntries = true, CancellationToken cancellationToken = default)
         {
             var run = await _payrollRepository.GetByIdAsync(id, includeEntries, cancellationToken);
@@ -41,6 +45,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = PermissionConstants.Finance.PayrollManage)]
         public async Task<ActionResult<PayrollRunResponseDto>> CreatePayrollRun([FromBody] PayrollRunUpsertDto request, CancellationToken cancellationToken = default)
         {
             if (request.PeriodStart > request.PeriodEnd)
@@ -68,6 +73,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Policy = PermissionConstants.Finance.PayrollManage)]
         public async Task<IActionResult> UpdatePayrollRun(int id, [FromBody] PayrollRunUpsertDto request, CancellationToken cancellationToken = default)
         {
             if (request.PeriodStart > request.PeriodEnd)
@@ -101,6 +107,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = PermissionConstants.Finance.PayrollManage)]
         public async Task<IActionResult> DeletePayrollRun(int id, CancellationToken cancellationToken = default)
         {
             var removed = await _payrollRepository.DeleteAsync(id, cancellationToken);

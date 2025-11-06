@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UserManagementService.Dtos;
 using UserManagementService.Services;
@@ -5,6 +6,7 @@ using UserManagementService.Services;
 namespace UserManagementService.Controllers
 {
     [ApiController]
+    [Authorize(Policy = "AdminOnly")]
     [Route("api/[controller]")]
     public class PermissionsController : ControllerBase
     {

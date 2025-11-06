@@ -1,6 +1,8 @@
 using FinanceService.Dtos;
 using FinanceService.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SharedContracts.Authorization;
 
 namespace FinanceService.Controllers
 {
@@ -20,6 +22,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = PermissionConstants.Finance.CompensationManage)]
         public async Task<ActionResult<EmployeeCompensationResponseDto>> CreateOrUpdateAccount(
             [FromBody] EmployeeAccountUpsertDto request,
             CancellationToken cancellationToken)
@@ -34,6 +37,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpGet("{employeeId}")]
+        [Authorize(Policy = PermissionConstants.Finance.CompensationRead)]
         public async Task<ActionResult<EmployeeCompensationResponseDto>> GetAccountSummary(
             string employeeId,
             CancellationToken cancellationToken)
@@ -48,6 +52,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpPut("{employeeId}")]
+        [Authorize(Policy = PermissionConstants.Finance.CompensationManage)]
         public async Task<ActionResult<EmployeeCompensationResponseDto>> UpdateAccountDetails(
             string employeeId,
             [FromBody] EmployeeCompensationUpdateDto request,
@@ -71,6 +76,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpPost("{employeeId}/bonuses")]
+        [Authorize(Policy = PermissionConstants.Finance.CompensationManage)]
         public async Task<ActionResult<IEnumerable<EmployeeBonusResponseDto>>> AddBonuses(
             string employeeId,
             [FromBody] IEnumerable<CompensationBonusCreateDto> bonuses,
@@ -100,6 +106,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpPost("{employeeId}/deductions")]
+        [Authorize(Policy = PermissionConstants.Finance.CompensationManage)]
         public async Task<ActionResult<IEnumerable<EmployeeDeductionResponseDto>>> AddDeductions(
             string employeeId,
             [FromBody] IEnumerable<CompensationDeductionCreateDto> deductions,
