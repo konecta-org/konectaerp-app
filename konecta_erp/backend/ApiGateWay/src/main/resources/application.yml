@@ -19,11 +19,6 @@ spring:
         health-check-interval: 15s
       config:
         enabled: false
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${AUTH_JWKS_URI:http://localhost:7280/.well-known/jwks.json}
     gateway:
       discovery:
         locator:
@@ -39,16 +34,10 @@ spring:
           predicates:
             - Path=/auth/**
           filters:
-            - StripPrefix=1
-            - name: CircuitBreaker
+            - name: RewritePath
               args:
-                name: authenticationServiceCircuitBreaker
-                fallbackUri: forward:/fallback/authentication-service
-        - id: authentication-service-direct
-          uri: ${upstreams.authentication}
-          predicates:
-            - Path=/api/Auth/**,/api/auth/**
-          filters:
+                regexp: ^/auth/(?<segment>.*)
+                replacement: /api/auth/${segment}
             - name: CircuitBreaker
               args:
                 name: authenticationServiceCircuitBreaker
@@ -58,7 +47,10 @@ spring:
           predicates:
             - Path=/hr/**
           filters:
-            - StripPrefix=1
+            - name: RewritePath
+              args:
+                regexp: ^/hr/(?<remaining>.*)
+                replacement: /${remaining}
             - name: CircuitBreaker
               args:
                 name: hrServiceCircuitBreaker
@@ -148,14 +140,19 @@ spring:
               args:
                 name: reportingServiceCircuitBreaker
                 fallbackUri: forward:/fallback/reporting-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${AUTH_JWKS_URI:http://localhost:7280/.well-known/jwks.json}
 
 upstreams:
-  authentication: "${AUTH_SERVICE_URI:https://authentication-service.service.consul:7280}"
-  hr: "${HR_SERVICE_URI:http://hr-service.service.consul:5005}"
-  userManagement: "${USER_MANAGEMENT_SERVICE_URI:http://user-management-service.service.consul:5078}"
-  inventory: "${INVENTORY_SERVICE_URI:http://inventory-service.service.consul:5020}"
-  finance: "${FINANCE_SERVICE_URI:http://finance-service.service.consul:5003}"
-  reporting: "${REPORTING_SERVICE_URI:http://reporting-service.service.consul:8085}"
+  authentication: "${AUTH_SERVICE_URI:http://localhost:7280}"
+  hr: "${HR_SERVICE_URI:http://localhost:5005}"
+  userManagement: "${USER_MANAGEMENT_SERVICE_URI:http://localhost:5078}"
+  inventory: "${INVENTORY_SERVICE_URI:http://localhost:5020}"
+  finance: "${FINANCE_SERVICE_URI:http://localhost:5003}"
+  reporting: "${REPORTING_SERVICE_URI:http://localhost:8085}"
 
 management:
   server:
@@ -163,10 +160,12 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,gateway
   endpoint:
     health:
       show-details: always
+    gateway:
+      enabled: true
   health:
     circuitbreakers:
       enabled: true

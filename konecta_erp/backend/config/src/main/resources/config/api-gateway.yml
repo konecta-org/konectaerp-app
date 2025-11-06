@@ -4,11 +4,6 @@ spring:
       on-profile: api-gateway
   application:
     name: api-gateway
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${AUTH_JWKS_URI:http://localhost:7280/.well-known/jwks.json}
   cloud:
     consul:
       host: ${CONSUL_HOST:consul}
@@ -43,7 +38,10 @@ spring:
           predicates:
             - Path=/auth/**
           filters:
-            - StripPrefix=1
+            - name: RewritePath
+              args:
+                regexp: ^/auth/(?<segment>.*)
+                replacement: /api/auth/${segment}
             - name: CircuitBreaker
               args:
                 name: authenticationServiceCircuitBreaker
@@ -53,7 +51,10 @@ spring:
           predicates:
             - Path=/hr/**
           filters:
-            - StripPrefix=1
+            - name: RewritePath
+              args:
+                regexp: ^/hr/(?<remaining>.*)
+                replacement: /${remaining}
             - name: CircuitBreaker
               args:
                 name: hrServiceCircuitBreaker
@@ -98,16 +99,21 @@ spring:
               args:
                 name: reportingServiceCircuitBreaker
                 fallbackUri: forward:/fallback/reporting-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${AUTH_JWKS_URI:http://localhost:7280/.well-known/jwks.json}
 server:
   port: ${SERVER_PORT:8080}
 
 upstreams:
-  authentication: ${AUTH_SERVICE_URI:http://authentication-service:7280}
-  hr: ${HR_SERVICE_URI:http://hr-service:5005}
-  userManagement: ${USER_MANAGEMENT_SERVICE_URI:http://user-management-service:5078}
-  inventory: ${INVENTORY_SERVICE_URI:http://inventory-service:5020}
-  finance: ${FINANCE_SERVICE_URI:http://finance-service:5003}
-  reporting: ${REPORTING_SERVICE_URI:http://reporting-service:8085}
+  authentication: ${AUTH_SERVICE_URI:http://localhost:7280}
+  hr: ${HR_SERVICE_URI:http://localhost:5005}
+  userManagement: ${USER_MANAGEMENT_SERVICE_URI:http://localhost:5078}
+  inventory: ${INVENTORY_SERVICE_URI:http://localhost:5020}
+  finance: ${FINANCE_SERVICE_URI:http://localhost:5003}
+  reporting: ${REPORTING_SERVICE_URI:http://localhost:8085}
 
 management:
   server:
@@ -115,10 +121,12 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,gateway
   endpoint:
     health:
       show-details: always
+    gateway:
+      enabled: true
 
 resilience4j:
   circuitbreaker:
