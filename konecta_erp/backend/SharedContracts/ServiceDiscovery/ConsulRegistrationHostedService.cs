@@ -42,13 +42,16 @@ public sealed class ConsulRegistrationHostedService : IHostedService
         }
 
         var registrationId = $"{_serviceConfig.ServiceName}-{Guid.NewGuid():N}";
-        var healthCheckUri = BuildHealthCheckUri();
+        var serviceAddress = string.IsNullOrWhiteSpace(_serviceConfig.PublicHost)
+            ? _serviceConfig.Host
+            : _serviceConfig.PublicHost;
+        var healthCheckUri = BuildHealthCheckUri(serviceAddress);
 
         _registration = new AgentServiceRegistration
         {
             ID = registrationId,
             Name = _serviceConfig.ServiceName,
-            Address = _serviceConfig.Host,
+            Address = serviceAddress,
             Port = _serviceConfig.Port,
             Tags = _serviceConfig.Tags,
             Check = new AgentServiceCheck
@@ -107,7 +110,7 @@ public sealed class ConsulRegistrationHostedService : IHostedService
         }
     }
 
-    private string BuildHealthCheckUri()
+    private string BuildHealthCheckUri(string serviceAddress)
     {
         var healthPath = _serviceConfig.HealthCheckPath?.Trim() ?? "/system/health";
         if (!healthPath.StartsWith("/"))
@@ -119,6 +122,6 @@ public sealed class ConsulRegistrationHostedService : IHostedService
             ? "http"
             : _serviceConfig.Scheme.ToLowerInvariant();
 
-        return $"{scheme}://{_serviceConfig.Host}:{_serviceConfig.Port}{healthPath}";
+        return $"{scheme}://{serviceAddress}:{_serviceConfig.Port}{healthPath}";
     }
 }

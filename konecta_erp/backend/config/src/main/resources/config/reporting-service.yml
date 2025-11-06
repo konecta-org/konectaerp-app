@@ -1,18 +1,18 @@
 server:
-  port: ${SERVER_PORT:8085}
+  port: 8085
 
 spring:
   application:
     name: reporting-service
   cloud:
     consul:
-      host: ${CONSUL_HOST:consul}
-      port: ${CONSUL_PORT:8500}
+      host: localhost
+      port: 8500
       discovery:
-        register: ${CONSUL_REGISTER:true}
+        register: true
         service-name: ${spring.application.name}
         instance-id: ${spring.application.name}-${random.value}
-        hostname: ${CONSUL_SERVICE_HOST:reporting-service}
+        hostname: host.docker.internal
         prefer-ip-address: false
         health-check-path: /actuator/health
         health-check-interval: 15s
@@ -21,11 +21,11 @@ spring:
 
 services:
   finance:
-    url: ${FINANCE_SERVICE_URI:http://finance-service:5003}
+    url: http://localhost:5003
   hr:
-    url: ${HR_SERVICE_URI:http://hr-service:5005}
+    url: http://localhost:5005
   inventory:
-    url: ${INVENTORY_SERVICE_URI:http://inventory-service:5020}
+    url: http://localhost:5020
 
 feign:
   client:

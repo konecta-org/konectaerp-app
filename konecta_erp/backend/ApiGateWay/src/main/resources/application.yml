@@ -19,6 +19,11 @@ spring:
         health-check-interval: 15s
       config:
         enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${AUTH_JWKS_URI:http://localhost:7280/.well-known/jwks.json}
     gateway:
       discovery:
         locator:
@@ -61,7 +66,7 @@ spring:
         - id: hr-service-direct
           uri: ${upstreams.hr}
           predicates:
-            - Path=/api/Attendance/**,/api/attendance/**,/api/Department/**,/api/department/**,/api/Employee/**,/api/employee/**,/api/HrSummary/**,/api/hrsummary/**,/api/Interviews/**,/api/interviews/**,/api/JobApplications/**,/api/jobapplications/**,/api/JobOpenings/**,/api/jobopenings/**,/api/LeaveRequests/**,/api/leaverequests/**,/api/ResignationRequests/**,/api/resignationrequests/**
+            - Path=/api/Attendance/**,/api/attendance/**,/api/Department/**,/api/department/**,/api/Employee/**,/api/employee/**,/api/Employees/**,/api/employees/**,/api/HrSummary/**,/api/hrsummary/**,/api/Interviews/**,/api/interviews/**,/api/JobApplications/**,/api/jobapplications/**,/api/JobOpenings/**,/api/jobopenings/**,/api/LeaveRequests/**,/api/leaverequests/**,/api/ResignationRequests/**,/api/resignationrequests/**
           filters:
             - name: CircuitBreaker
               args:

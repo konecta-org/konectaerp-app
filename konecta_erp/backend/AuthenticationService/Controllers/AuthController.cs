@@ -29,6 +29,7 @@ namespace AuthenticationService.Controllers
         }
 
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register(RegisterRequest request)
         {
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
@@ -69,6 +70,7 @@ namespace AuthenticationService.Controllers
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> Login(LoginRequest request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
@@ -91,11 +93,20 @@ namespace AuthenticationService.Controllers
                     S_Message = "Password verification failed."
                 });
 
-            var token = _jwtService.GenerateToken(user);
+            var roles = await _userManager.GetRolesAsync(user);
+            var token = _jwtService.GenerateToken(user, roles);
 
             return Ok(new GenericResponse
             {
-                Result = new { Token = token, UserId = user.Id, user.Email },
+                Result = new
+                {
+                    AccessToken = token.AccessToken,
+                    ExpiresAtUtc = token.ExpiresAtUtc,
+                    KeyId = token.KeyId,
+                    UserId = user.Id,
+                    user.Email,
+                    Roles = roles
+                },
                 Code = "200",
                 C_Message = "Login successful.",
                 S_Message = "JWT token generated successfully."
@@ -103,6 +114,7 @@ namespace AuthenticationService.Controllers
         }
 
         [HttpPost("validate-token")]
+        [AllowAnonymous]
         public IActionResult ValidateToken([FromBody] string token)
         {
             var principal = _jwtService.ValidateToken(token);
@@ -116,10 +128,15 @@ namespace AuthenticationService.Controllers
                 });
 
             var email = principal.FindFirst(ClaimTypes.Email)?.Value;
+            var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+            var roles = principal.Claims
+                .Where(c => c.Type == ClaimTypes.Role)
+                .Select(c => c.Value)
+                .ToArray();
 
             return Ok(new GenericResponse
             {
-                Result = new { Email = email },
+                Result = new { Email = email, UserId = userId, Roles = roles },
                 Code = "200",
                 C_Message = "Token is valid.",
                 S_Message = "JWT token successfully validated."

@@ -2,14 +2,16 @@ using AuthenticationService.BackgroundServices;
 using AuthenticationService.Data;
 using AuthenticationService.Messaging;
 using AuthenticationService.Models;
+using AuthenticationService.Options;
+using AuthenticationService.Security;
 using AuthenticationService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Options;
 using SharedContracts.ServiceDiscovery;
-using System.Text;
 using Steeltoe.Extensions.Configuration.ConfigServer;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -76,30 +78,17 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
-// JWT Configuration
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured");
-
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.AddSingleton<IJwksProvider, JwksProvider>();
+builder.Services.AddSingleton<IConfigureOptions<JwtBearerOptions>, AuthServiceJwtBearerOptionsSetup>();
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
+}).AddJwtBearer();
+builder.Services.AddOptions<JwtBearerOptions>().Configure(options =>
 {
-    options.RequireHttpsMetadata = false; // dev
-    options.IncludeErrorDetails = true;   // surface error in WWW-Authenticate
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-        ClockSkew = TimeSpan.Zero
-    };
+    options.IncludeErrorDetails = true;
     options.Events = new JwtBearerEvents
     {
         OnAuthenticationFailed = context =>
@@ -122,7 +111,6 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
-
 builder.Services.AddAuthorization();
 
 // CORS Configuration
@@ -202,7 +190,7 @@ app.MapGet("/system/health", () =>
         status = "UP",
         service = serviceName,
         timestamp = DateTimeOffset.UtcNow
-    }));
+    })).AllowAnonymous();
 
 app.MapGet("/system/fallback", () =>
     Results.Json(new
@@ -211,6 +199,6 @@ app.MapGet("/system/fallback", () =>
         service = serviceName,
         message = "Serving fallback response from Authentication Service.",
         timestamp = DateTimeOffset.UtcNow
-    }, statusCode: StatusCodes.Status503ServiceUnavailable));
+    }, statusCode: StatusCodes.Status503ServiceUnavailable)).AllowAnonymous();
 
 app.Run();

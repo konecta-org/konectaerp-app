@@ -1,12 +1,12 @@
 ConnectionStrings:
-  DefaultConnection: ${FINANCE_DB_CONNECTION:Server=sqlserver,1433;Database=Konecta_Finance;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;}
+  DefaultConnection: Server=localhost;Database=Konecta_Finance;Trusted_Connection=True;TrustServerCertificate=True;
 
 RabbitMq:
-  HostName: ${RABBITMQ_HOST:rabbitmq}
-  Port: ${RABBITMQ_PORT:5672}
-  UserName: ${RABBITMQ_USER:guest}
-  Password: ${RABBITMQ_PASSWORD:guest}
-  VirtualHost: ${RABBITMQ_VHOST:/}
+  HostName: localhost
+  Port: 5672
+  UserName: guest
+  Password: guest
+  VirtualHost: /
   Exchange: konecta.erp
   CompensationEventsQueue: finance.compensation.events
   CompensationProvisionedRoutingKey: finance.compensation.provisioned
@@ -14,11 +14,18 @@ RabbitMq:
   CompensationDeductionsRoutingKey: finance.compensation.deductions
 
 Consul:
-  Host: ${CONSUL_ENDPOINT:http://consul:8500}
+  Host: http://localhost:8500
+
+JwtSettings:
+  Issuer: KonectaERP
+  Audience: KonectaERPUsers
+  JwksUri: http://localhost:7280/.well-known/jwks.json
+  RequireHttpsMetadata: false
+  CacheDurationMinutes: 30
 
 ServiceConfig:
   ServiceName: finance-service
-  Host: 0.0.0.0
+  Host: host.docker.internal
   Port: 5003
   RegisterWithConsul: true
   FailFast: false

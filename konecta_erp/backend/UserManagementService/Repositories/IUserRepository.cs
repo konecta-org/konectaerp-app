@@ -11,6 +11,8 @@ namespace UserManagementService.Repositories
         Task AddAsync(User user, CancellationToken cancellationToken = default);
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
         Task<UserSummaryData> GetSummaryAsync(CancellationToken cancellationToken = default);
+
+        Task<List<User>> GetAllUsersAsync(CancellationToken cancellationToken = default);
         void Update(User user);
     }
 }

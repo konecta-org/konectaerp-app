@@ -15,6 +15,11 @@ public sealed class ServiceConfig
     
     public string Scheme { get; set; } = "http";
 
+    /// <summary>
+    /// Optional hostname or IP published to Consul; defaults to <see cref="Host"/> when unspecified.
+    /// </summary>
+    public string? PublicHost { get; set; }
+
   
     [StringSyntax(StringSyntaxAttribute.Uri)]
     public string HealthCheckPath { get; set; } = "/system/health";

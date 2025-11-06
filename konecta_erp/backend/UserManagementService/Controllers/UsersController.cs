@@ -28,6 +28,13 @@ namespace UserManagementService.Controllers
             var response = new PagedResultDto<UserResponseDto>(mappedUsers, pagedUsers.Page, pagedUsers.PageSize, pagedUsers.TotalItems);
             return Ok(response);
         }
+        [HttpGet("all-users")]
+        public async Task<ActionResult<List<UserResponseDto>>> GetAllUsers( CancellationToken cancellationToken)
+        {
+           var users = await _userService.GetAllUsersAsync(cancellationToken);
+           var mappedUsers = users.Select(user => _mapper.Map<UserResponseDto>(user)).ToList();
+           return Ok(mappedUsers);
+        }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<UserResponseDto>> GetUserById(string id, CancellationToken cancellationToken)

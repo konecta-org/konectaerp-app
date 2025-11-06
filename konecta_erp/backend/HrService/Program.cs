@@ -3,8 +3,11 @@ using HrService.Data;
 using HrService.Messaging;
 using HrService.Profiles;
 using HrService.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using SharedContracts.Security;
 using SharedContracts.ServiceDiscovery;
 using Steeltoe.Extensions.Configuration.ConfigServer;
 
@@ -42,6 +45,14 @@ builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(Rab
 builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
 builder.Services.AddSingleton<IEventPublisher, RabbitMqPublisher>();
 builder.Services.AddHostedService<UserProvisionedConsumer>();
+builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 builder.Services.AddCors(options =>
 {
@@ -73,6 +84,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAll");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
@@ -87,7 +100,7 @@ app.MapGet("/system/health", () =>
         status = "UP",
         service = serviceName,
         timestamp = DateTimeOffset.UtcNow
-    }));
+    })).AllowAnonymous();
 
 app.MapGet("/system/fallback", () =>
     Results.Json(new
@@ -96,6 +109,6 @@ app.MapGet("/system/fallback", () =>
         service = serviceName,
         message = "Serving fallback response from HR Service.",
         timestamp = DateTimeOffset.UtcNow
-    }, statusCode: StatusCodes.Status503ServiceUnavailable));
+    }, statusCode: StatusCodes.Status503ServiceUnavailable)).AllowAnonymous();
 
 app.Run();

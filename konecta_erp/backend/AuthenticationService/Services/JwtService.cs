@@ -1,71 +1,135 @@
-using AuthenticationService.Models;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
+using AuthenticationService.Models;
+using AuthenticationService.Options;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
-namespace AuthenticationService.Services
+namespace AuthenticationService.Services;
+
+public sealed class JwtService : IJwtService
 {
-    public class JwtService : IJwtService
+    private readonly IJwksProvider _jwksProvider;
+    private readonly IOptionsMonitor<JwtOptions> _optionsMonitor;
+    private readonly ILogger<JwtService> _logger;
+
+    public JwtService(
+        IJwksProvider jwksProvider,
+        IOptionsMonitor<JwtOptions> optionsMonitor,
+        ILogger<JwtService> logger)
     {
-        private readonly IConfiguration _configuration;
+        _jwksProvider = jwksProvider;
+        _optionsMonitor = optionsMonitor;
+        _logger = logger;
+    }
 
-        public JwtService(IConfiguration configuration)
+    public TokenResult GenerateToken(ApplicationUser user, IEnumerable<string> roles)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        var options = _optionsMonitor.CurrentValue;
+        var signingCredentials = _jwksProvider.GetCurrentSigningCredentials();
+        var expiresAt = DateTime.UtcNow.AddMinutes(options.ExpirationMinutes);
+
+        var claims = new List<Claim>
         {
-            _configuration = configuration;
+            new(JwtRegisteredClaimNames.Sub, user.Id),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Iat, ToUnixTimeSeconds(DateTime.UtcNow), ClaimValueTypes.Integer64),
+            new(ClaimTypes.NameIdentifier, user.Id),
+            new("uid", user.Id),
+            new("full_name", user.FullName ?? string.Empty)
+        };
+
+        if (!string.IsNullOrWhiteSpace(user.Email))
+        {
+            claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
+            claims.Add(new Claim(ClaimTypes.Email, user.Email));
         }
 
-        public string GenerateToken(ApplicationUser user)
+        if (!string.IsNullOrWhiteSpace(user.UserName))
         {
-            var jwtSettings = _configuration.GetSection("JwtSettings");
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email ?? ""),
-                new Claim("FullName", user.FullName ?? "")
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: jwtSettings["Issuer"],
-                audience: jwtSettings["Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(jwtSettings["ExpirationMinutes"])),
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            claims.Add(new Claim("preferred_username", user.UserName));
         }
 
-        public ClaimsPrincipal? ValidateToken(string token)
+        if (user.EmployeeId.HasValue)
         {
-            var jwtSettings = _configuration.GetSection("JwtSettings");
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!);
-
-            try
-            {
-                var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtSettings["Issuer"],
-                    ValidAudience = jwtSettings["Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ClockSkew = TimeSpan.Zero 
-                }, out _);
-
-                return principal;
-            }
-            catch
-            {
-                return null; 
-            }
+            claims.Add(new Claim("employee_id", user.EmployeeId.Value.ToString()));
         }
+
+        var distinctRoles = roles?
+            .Where(role => !string.IsNullOrWhiteSpace(role))
+            .Select(role => role.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray() ?? Array.Empty<string>();
+
+        foreach (var role in distinctRoles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+            claims.Add(new Claim("roles", role));
+        }
+
+        var handler = new JwtSecurityTokenHandler();
+        var descriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = expiresAt,
+            Issuer = options.Issuer,
+            Audience = options.Audience,
+            SigningCredentials = signingCredentials
+        };
+
+        var securityToken = handler.CreateJwtSecurityToken(descriptor);
+        securityToken.Header["kid"] = signingCredentials.Key.KeyId;
+
+        var token = handler.WriteToken(securityToken);
+        return new TokenResult(token, expiresAt, signingCredentials.Key.KeyId ?? string.Empty);
+    }
+
+    public ClaimsPrincipal? ValidateToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return null;
+        }
+
+        var handler = new JwtSecurityTokenHandler();
+        var options = _optionsMonitor.CurrentValue;
+
+        var validationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = options.Issuer,
+            ValidateAudience = true,
+            ValidAudience = options.Audience,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            RequireSignedTokens = true,
+            ClockSkew = TimeSpan.Zero,
+            IssuerSigningKeyResolver = (_, _, kid, _) =>
+                _jwksProvider.GetValidationKeys(kid).ToArray()
+        };
+
+        try
+        {
+            return handler.ValidateToken(token, validationParameters, out _);
+        }
+        catch (SecurityTokenException ex)
+        {
+            _logger.LogWarning(ex, "JWT validation failed: {Message}", ex.Message);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred while validating JWT.");
+            return null;
+        }
+    }
+
+    private static string ToUnixTimeSeconds(DateTime value)
+    {
+        var unixTime = new DateTimeOffset(value).ToUnixTimeSeconds();
+        return unixTime.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 }

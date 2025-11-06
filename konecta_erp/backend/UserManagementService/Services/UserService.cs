@@ -29,6 +29,10 @@ namespace UserManagementService.Services
         {
             return _repository.GetPagedAsync(parameters, cancellationToken);
         }
+        public async Task<List<User>> GetAllUsersAsync(CancellationToken cancellationToken = default)
+        {
+            return  await _repository.GetAllUsersAsync( cancellationToken);
+        }
 
         public Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {

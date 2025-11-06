@@ -66,6 +66,15 @@ namespace UserManagementService.Repositories
             return new PagedResultDto<User>(items, parameters.Page, parameters.PageSize, totalItems);
         }
 
+        public async Task<List<User>> GetAllUsersAsync(CancellationToken cancellationToken = default)
+        {
+            return await _context.Users
+                .AsNoTracking()
+                .Include(user => user.UserRoles)!
+                    .ThenInclude(ur => ur.Role)
+                .ToListAsync(cancellationToken);
+        }
+
         public Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
             return _context.Users

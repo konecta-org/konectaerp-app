@@ -1,9 +1,14 @@
-server:
-  port: ${SERVER_PORT:8080}
-
 spring:
+  config:
+    activate:
+      on-profile: api-gateway
   application:
     name: api-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${AUTH_JWKS_URI:http://localhost:7280/.well-known/jwks.json}
   cloud:
     consul:
       host: ${CONSUL_HOST:consul}
@@ -93,6 +98,8 @@ spring:
               args:
                 name: reportingServiceCircuitBreaker
                 fallbackUri: forward:/fallback/reporting-service
+server:
+  port: ${SERVER_PORT:8080}
 
 upstreams:
   authentication: ${AUTH_SERVICE_URI:http://authentication-service:7280}

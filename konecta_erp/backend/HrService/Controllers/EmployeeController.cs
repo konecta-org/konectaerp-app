@@ -10,7 +10,8 @@ using SharedContracts.Events;
 namespace HrService.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/employee")]
+    [Route("api/employees")]
     public class EmployeeController : ControllerBase
     {
         private readonly IEmployeeRepo _employeeRepo;
