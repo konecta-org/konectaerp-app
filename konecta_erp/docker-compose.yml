@@ -29,7 +29,7 @@ services:
       SA_PASSWORD: 'pa55w0rd!'
     volumes:
       - ./docker/sqlserver:/scripts:ro
-    entrypoint: ["/bin/bash", "-c", "until /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P \"$SA_PASSWORD\" -C -Q \"SELECT 1\" &> /dev/null; do echo 'Waiting for SQL Server...'; sleep 2; done; echo 'SQL Server is ready!'; /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P \"$SA_PASSWORD\" -C -d master -i /scripts/create-databases.sql"]
+    entrypoint: ["/bin/bash", "-c", "counter=0; while [ $$counter -lt 30 ]; do if /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P \"$$SA_PASSWORD\" -C -Q \"SELECT 1\" -b -h -1 > /dev/null 2>&1; then echo 'SQL Server is ready!'; /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P \"$$SA_PASSWORD\" -C -d master -i /scripts/create-databases.sql; exit 0; fi; counter=$$((counter+1)); echo \"Waiting for SQL Server... (attempt $$counter/30)\"; sleep 2; done; echo 'SQL Server connection timeout!'; exit 1"]
     restart: "no"
     networks:
       - erp-network
