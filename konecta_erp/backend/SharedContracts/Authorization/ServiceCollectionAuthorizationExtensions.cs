@@ -5,10 +5,6 @@ namespace SharedContracts.Authorization;
 
 public static class ServiceCollectionAuthorizationExtensions
 {
-    /// <summary>
-    /// Registers the permission-based authorization handler and configures policies for each declared permission.
-    /// Call this once in service startup after <c>AddAuthentication</c>.
-    /// </summary>
     public static IServiceCollection AddPermissionPolicies(this IServiceCollection services)
     {
         services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
@@ -18,7 +14,7 @@ public static class ServiceCollectionAuthorizationExtensions
             {
                 foreach (var permission in PermissionConstants.All)
                 {
-                    if (!options.PolicyNames.Contains(permission))
+                    if (options.GetPolicy(permission) == null)
                     {
                         options.AddPolicy(permission, builder =>
                         {

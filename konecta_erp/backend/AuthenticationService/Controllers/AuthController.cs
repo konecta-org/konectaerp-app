@@ -98,7 +98,9 @@ namespace AuthenticationService.Controllers
 
             var roles = await _userManager.GetRolesAsync(user);
             var authorizationProfile = await _userManagementClient.GetAuthorizationProfileAsync(user.Id, HttpContext.RequestAborted);
-            var aggregatedRoles = authorizationProfile?.Roles?.Count > 0 ? authorizationProfile.Roles : roles;
+            IReadOnlyCollection<string> aggregatedRoles = authorizationProfile?.Roles?.Count > 0 
+                ? authorizationProfile.Roles 
+                : roles.ToList().AsReadOnly();
             var aggregatedPermissions = authorizationProfile?.Permissions ?? Array.Empty<string>();
             var token = _jwtService.GenerateToken(user, aggregatedRoles, aggregatedPermissions);
 
