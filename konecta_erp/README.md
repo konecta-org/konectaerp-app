@@ -107,11 +107,11 @@ All Swagger UIs and APIs are exposed through the API Gateway on **port 8080**. R
 
 | Microservice | Swagger URL |
 |--------------|-------------|
-| Authentication | http://localhost:8080/swagger/authentication |
-| HR | http://localhost:8080/swagger/hr |
-| User Management | http://localhost:8080/swagger/user-management |
-| Finance | http://localhost:8080/swagger/finance |
-| Inventory | http://localhost:8080/swagger/inventory |
+| Authentication | http://localhost:8080/swagger/auth/index.html |
+| HR | http://localhost:8080/swagger/hr/index.html |
+| User Management | http://localhost:8080/swagger/users/index.html |
+| Finance | http://localhost:8080/swagger/finance/index.html |
+| Inventory | http://localhost:8080/swagger/inventory/index.html |
 | Reporting | http://localhost:8080/swagger/reporting |
 
 Each Swagger UI is preconfigured with JWT Bearer support.
