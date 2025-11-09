@@ -77,7 +77,7 @@ spring:
         - id: user-management-service-direct
           uri: ${upstreams.userManagement}
           predicates:
-            - Path=/api/Users/**,/api/users/**
+            - Path=/api/Users/**,/api/users/**,/api/Roles/**,/api/roles/**,/api/Permissions/**,/api/permissions/**
           filters:
             - name: CircuitBreaker
               args:
@@ -140,6 +140,48 @@ spring:
               args:
                 name: reportingServiceCircuitBreaker
                 fallbackUri: forward:/fallback/reporting-service
+        # Swagger UI routes - Authentication Service
+        - id: swagger-auth-ui
+          uri: ${upstreams.authentication}
+          predicates:
+            - Path=/swagger/auth/**
+          filters:
+            - RewritePath=/swagger/auth(?<segment>/?.*), /swagger${segment}
+        # Swagger UI routes - HR Service
+        - id: swagger-hr-ui
+          uri: ${upstreams.hr}
+          predicates:
+            - Path=/swagger/hr/**
+          filters:
+            - RewritePath=/swagger/hr(?<segment>/?.*), /swagger${segment}
+        # Swagger UI routes - User Management Service
+        - id: swagger-users-ui
+          uri: ${upstreams.userManagement}
+          predicates:
+            - Path=/swagger/users/**
+          filters:
+            - RewritePath=/swagger/users(?<segment>/?.*), /swagger${segment}
+        # Swagger UI routes - Finance Service
+        - id: swagger-finance-ui
+          uri: ${upstreams.finance}
+          predicates:
+            - Path=/swagger/finance/**
+          filters:
+            - RewritePath=/swagger/finance(?<segment>/?.*), /swagger${segment}
+        # Swagger UI routes - Inventory Service
+        - id: swagger-inventory-ui
+          uri: ${upstreams.inventory}
+          predicates:
+            - Path=/swagger/inventory/**
+          filters:
+            - RewritePath=/swagger/inventory(?<segment>/?.*), /swagger${segment}
+        # Swagger UI routes - Reporting Service
+        - id: swagger-reporting-ui
+          uri: ${upstreams.reporting}
+          predicates:
+            - Path=/swagger/reporting/**
+          filters:
+            - RewritePath=/swagger/reporting(?<segment>/?.*), /swagger${segment}
   security:
     oauth2:
       resourceserver:

@@ -3,6 +3,7 @@ using HrService.Dtos;
 using HrService.Messaging;
 using HrService.Models;
 using HrService.Repositories;
+using HrService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SharedContracts.Events;
@@ -20,6 +21,7 @@ namespace HrService.Controllers
         private readonly IEventPublisher _eventPublisher;
         private readonly RabbitMqOptions _rabbitOptions;
         private readonly ILogger<EmployeeController> _logger;
+        private readonly IEmailService _emailService;
 
         public EmployeeController(
             IEmployeeRepo employeeRepo,
@@ -27,7 +29,8 @@ namespace HrService.Controllers
             IMapper mapper,
             IEventPublisher eventPublisher,
             IOptions<RabbitMqOptions> rabbitOptions,
-            ILogger<EmployeeController> logger)
+            ILogger<EmployeeController> logger,
+            IEmailService emailService)
         {
             _employeeRepo = employeeRepo;
             _departmentRepo = departmentRepo;
@@ -35,6 +38,7 @@ namespace HrService.Controllers
             _eventPublisher = eventPublisher;
             _logger = logger;
             _rabbitOptions = rabbitOptions.Value;
+            _emailService = emailService;
         }
 
         [HttpGet]
@@ -101,6 +105,16 @@ namespace HrService.Controllers
             await _eventPublisher.PublishAsync(_rabbitOptions.EmployeeCreatedRoutingKey, employeeCreatedEvent, cancellationToken);
 
             _logger.LogInformation("Employee {EmployeeId} created and event published.", employee.Id);
+
+            // Send welcome email to employee
+            var temporaryPassword = "Welcome@" + DateTime.Now.Year;
+            await _emailService.SendWelcomeEmailAsync(
+                employee.PersonalEmail ?? employee.WorkEmail,
+                employee.FullName,
+                employee.WorkEmail,
+                temporaryPassword);
+
+            _logger.LogInformation("Welcome email sent to {Email}", employee.WorkEmail);
 
             return CreatedAtAction(nameof(GetEmployeeById), new { id = employee.Id }, response);
         }

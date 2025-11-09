@@ -73,6 +73,7 @@ services:
       SERVER_PORT: 8888
       CONSUL_HOST: consul
       CONSUL_PORT: 8500
+      CONSUL_ENDPOINT: http://consul:8500
     depends_on:
       - consul
     ports:
@@ -93,6 +94,7 @@ services:
       CONSUL_PORT: 8500
       CONSUL_SERVICE_HOST: api-gateway
       AUTH_SERVICE_URI: http://authentication-service:7280
+      AUTH_JWKS_URI: http://authentication-service:7280/.well-known/jwks.json
       HR_SERVICE_URI: http://hr-service:5005
       USER_MANAGEMENT_SERVICE_URI: http://user-management-service:5078
       INVENTORY_SERVICE_URI: http://inventory-service:5020

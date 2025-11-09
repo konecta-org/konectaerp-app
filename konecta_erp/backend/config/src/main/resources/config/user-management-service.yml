@@ -1,12 +1,12 @@
 ConnectionStrings:
-  DefaultConnection: ${USER_MGMT_DB_CONNECTION:Server=sqlserver,1433;Database=Konecta_UserManagement;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;}
+  DefaultConnection: Server=sqlserver,1433;Database=Konecta_UserManagement;User Id=sa;Password=pa55w0rd!;TrustServerCertificate=True;
 
 RabbitMq:
-  HostName: ${RABBITMQ_HOST:rabbitmq}
-  Port: ${RABBITMQ_PORT:5672}
-  UserName: ${RABBITMQ_USER:guest}
-  Password: ${RABBITMQ_PASSWORD:guest}
-  VirtualHost: ${RABBITMQ_VHOST:/}
+  HostName: rabbitmq
+  Port: 5672
+  UserName: guest
+  Password: guest
+  VirtualHost: /
   Exchange: konecta.erp
   UserEventsQueue: user-management.user-events
   UserProvisionedRoutingKey: auth.user.provisioned
@@ -15,21 +15,22 @@ RabbitMq:
   UserTerminatedRoutingKey: auth.user.terminated
 
 Consul:
-  Host: ${CONSUL_ENDPOINT:http://consul:8500}
+  Host: http://consul:8500
 
 JwtSettings:
-  Issuer: ${JWT_ISSUER:KonectaERP}
-  Audience: ${JWT_AUDIENCE:KonectaERPUsers}
-  JwksUri: ${JWT_JWKS_URI:http://authentication-service:7280/.well-known/jwks.json}
-  RequireHttpsMetadata: ${JWT_REQUIRE_HTTPS:false}
-  CacheDurationMinutes: ${JWT_CACHE_MINUTES:30}
+  Issuer: KonectaERP
+  Audience: KonectaERPUsers
+  JwksUri: http://authentication-service:7280/.well-known/jwks.json
+  RequireHttpsMetadata: false
+  CacheDurationMinutes: 30
 
 ServiceAuth:
-  SharedSecret: ${SERVICE_SHARED_SECRET:KonectaSharedSecret!}
+  SharedSecret: KonectaSharedSecret!
 
 ServiceConfig:
   ServiceName: user-management-service
   Host: 0.0.0.0
+  PublicHost: user-management-service
   Port: 5078
   RegisterWithConsul: true
   FailFast: false

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Options;
 using SharedContracts.Configuration;
@@ -33,9 +34,9 @@ builder.Services.AddSwaggerGen(c =>
         Description = "Authentication and Authorization API for Konecta ERP System"
     });
 
-    // Prefer HTTPS server to avoid auth header loss on HTTP->HTTPS redirects
-    c.AddServer(new OpenApiServer { Url = "https://localhost:7280" });
-    c.AddServer(new OpenApiServer { Url = "http://localhost:5099" });
+    // Default server for Swagger UI
+    c.AddServer(new OpenApiServer { Url = "http://localhost:7280", Description = "Direct Access" });
+    c.AddServer(new OpenApiServer { Url = "http://localhost:8080", Description = "API Gateway" });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -91,8 +92,31 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddOptions<JwtBearerOptions>().Configure(options =>
 {
     options.IncludeErrorDetails = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
     options.Events = new JwtBearerEvents
     {
+        OnMessageReceived = context =>
+        {
+            var authHeader = context.Request.Headers["Authorization"].ToString();
+            if (!string.IsNullOrEmpty(authHeader))
+            {
+                // Enforce Bearer scheme
+                if (!authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Fail("Authorization header must use Bearer scheme");
+                    return Task.CompletedTask;
+                }
+                Console.WriteLine("JWT message received with valid Bearer token format.");
+            }
+            return Task.CompletedTask;
+        },
         OnAuthenticationFailed = context =>
         {
             Console.WriteLine($"JWT auth failed: {context.Exception.Message}");
@@ -101,14 +125,6 @@ builder.Services.AddOptions<JwtBearerOptions>().Configure(options =>
         OnChallenge = context =>
         {
             Console.WriteLine($"JWT challenge: Error={context.Error}, Desc={context.ErrorDescription}");
-            return Task.CompletedTask;
-        },
-        OnMessageReceived = context =>
-        {
-            if (context.Request.Headers.ContainsKey("Authorization"))
-            {
-                Console.WriteLine("JWT message received with Authorization header.");
-            }
             return Task.CompletedTask;
         }
     };
@@ -196,6 +212,9 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
+
+// Seed admin user after migrations
+await AuthenticationService.Services.AdminSeeder.SeedAdminUser(app.Services);
 
 app.MapGet("/system/health", () =>
     Results.Ok(new

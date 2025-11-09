@@ -145,14 +145,16 @@ namespace AuthenticationService.BackgroundServices
 
             _logger.LogInformation("Created identity user {UserId} for employee {EmployeeId}.", user.Id, payload.EmployeeId);
 
-            // try
-            // {
-            //     await emailSender.SendEmployeeCredentialsAsync(payload.PersonalEmail, payload.FullName, payload.WorkEmail, password);
-            // }
-            // catch (Exception ex)
-            // {
-            //     _logger.LogError(ex, "Failed to send credentials email to {PersonalEmail}", payload.PersonalEmail);
-            // }
+            try
+            {
+                var emailTo = !string.IsNullOrEmpty(payload.PersonalEmail) ? payload.PersonalEmail : payload.WorkEmail;
+                await emailSender.SendEmployeeCredentialsAsync(emailTo, payload.FullName, payload.WorkEmail, password);
+                _logger.LogInformation("Welcome email with password sent to {Email}", emailTo);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send credentials email to employee {EmployeeId}. Password is: {Password}", payload.EmployeeId, password);
+            }
 
             var roles = new[] { "Employee" };
             var userProvisionedEvent = new UserProvisionedEvent(

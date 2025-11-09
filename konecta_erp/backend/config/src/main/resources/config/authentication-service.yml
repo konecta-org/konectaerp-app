@@ -1,12 +1,12 @@
 ConnectionStrings:
-  DefaultConnection: ${AUTH_DB_CONNECTION:Server=sqlserver,1433;Database=Konecta_Auth;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;}
+  DefaultConnection: Server=sqlserver,1433;Database=Konecta_Auth;User Id=sa;Password=pa55w0rd!;TrustServerCertificate=True;
 
 RabbitMq:
-  HostName: ${RABBITMQ_HOST:rabbitmq}
-  Port: ${RABBITMQ_PORT:5672}
-  UserName: ${RABBITMQ_USER:guest}
-  Password: ${RABBITMQ_PASSWORD:guest}
-  VirtualHost: ${RABBITMQ_VHOST:/}
+  HostName: rabbitmq
+  Port: 5672
+  UserName: guest
+  Password: guest
+  VirtualHost: /
   Exchange: konecta.erp
   EmployeeCreatedQueue: auth.employee-created
   EmployeeCreatedRoutingKey: hr.employee.created
@@ -19,19 +19,21 @@ RabbitMq:
   UserTerminatedRoutingKey: auth.user.terminated
 
 Email:
-  FromAddress: ${EMAIL_FROM:no-reply@konecta.local}
-  FromDisplayName: ${EMAIL_DISPLAY_NAME:Konecta HR}
-  SmtpHost: ${EMAIL_SMTP_HOST:mailhog}
-  SmtpPort: ${EMAIL_SMTP_PORT:1025}
-  UseSsl: ${EMAIL_USE_SSL:false}
-  UserName: ${EMAIL_USERNAME:}
-  Password: ${EMAIL_PASSWORD:}
+  FromAddress: no-reply@konecta.local
+  FromDisplayName: Konecta HR
+  SmtpHost: mailhog
+  SmtpPort: 1025
+  UseSsl: false
+  UserName: ""
+  Password: ""
+
+
 
 JwtSettings:
-  Issuer: ${JWT_ISSUER:KonectaERP}
-  Audience: ${JWT_AUDIENCE:KonectaERPUsers}
-  ExpirationMinutes: ${JWT_EXPIRATION_MINUTES:60}
-  RefreshTokenExpirationDays: ${JWT_REFRESH_DAYS:7}
+  Issuer: KonectaERP
+  Audience: KonectaERPUsers
+  ExpirationMinutes: 60
+  RefreshTokenExpirationDays: 7
   Keys:
     - Id: key-202501
       IsCurrent: true
@@ -88,15 +90,16 @@ JwtSettings:
         -----END PUBLIC KEY-----
 
 ServiceAuth:
-  SharedSecret: ${SERVICE_SHARED_SECRET:KonectaSharedSecret!}
-  UserManagementBaseUrl: ${USER_MANAGEMENT_BASE_URL:http://user-management-service:5078}
+  SharedSecret: KonectaSharedSecret!
+  UserManagementBaseUrl: http://user-management-service:5078
 
 Consul:
-  Host: ${CONSUL_ENDPOINT:http://consul:8500}
+  Host: http://consul:8500
 
 ServiceConfig:
   ServiceName: authentication-service
   Host: 0.0.0.0
+  PublicHost: authentication-service
   Port: 7280
   Scheme: http
   RegisterWithConsul: true
