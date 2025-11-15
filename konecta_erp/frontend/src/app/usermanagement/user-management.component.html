@@ -1,0 +1,67 @@
+<section class="panel">
+  <header>
+    <div>
+      <h2>Directory</h2>
+      <p>Manage user accounts, status, and role assignments.</p>
+    </div>
+    <div class="filters">
+      <input type="search" [formControl]="searchControl" placeholder="Search users" />
+      <label class="checkbox">
+        <input type="checkbox" [formControl]="includeDeleted" (change)="loadUsers()" />
+        Include deleted
+      </label>
+      <button type="button" (click)="loadUsers()">Refresh</button>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="table-wrapper" [class.loading]="loading()">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Department</th>
+            <th>Primary role</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of users(); trackBy: trackByUserId" (click)="selectUser(user)" [class.active]="user.id === selectedUser()?.id">
+            <td>{{ user.fullName }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.department || '—' }}</td>
+            <td>{{ user.primaryRole }}</td>
+            <td>
+              <span class="status-chip" [class.locked]="user.isLocked">{{ user.status }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="empty" *ngIf="!loading() && users().length === 0">
+        No users matched your filters.
+      </div>
+    </div>
+
+    <aside class="details" *ngIf="selectedUser() as user">
+      <h3>{{ user.fullName }}</h3>
+      <p class="muted">{{ user.email }}</p>
+      <div class="detail-row">
+        <span>Department</span>
+        <strong>{{ user.department || '—' }}</strong>
+      </div>
+      <div class="detail-row">
+        <span>Job title</span>
+        <strong>{{ user.jobTitle || '—' }}</strong>
+      </div>
+
+      <section>
+        <label for="roles">Assigned roles</label>
+        <select id="roles" multiple [formControl]="selectedRoleIds">
+          <option *ngFor="let role of availableRoles()" [ngValue]="role.id">{{ role.name }}</option>
+        </select>
+        <button type="button" (click)="saveRoles()">Save roles</button>
+      </section>
+    </aside>
+  </div>
+</section>

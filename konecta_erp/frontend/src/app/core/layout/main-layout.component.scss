@@ -1,0 +1,77 @@
+:host,
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid #e4e7ec;
+  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #1f2937;
+}
+
+.logo-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(130deg, #2563eb, #f97316);
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  a {
+    text-decoration: none;
+    color: #475467;
+    font-weight: 500;
+    padding: 0.35rem 0.65rem;
+    border-radius: 0.4rem;
+    &.active,
+    &:hover {
+      color: #111927;
+      background: #e0e7ff;
+    }
+  }
+}
+
+.user-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  button {
+    border: none;
+    background: #ef4444;
+    color: #fff;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.4rem;
+    cursor: pointer;
+  }
+}
+
+.user-email {
+  font-weight: 600;
+}
+
+.user-roles {
+  color: #6b7280;
+}
+
+.content {
+  flex: 1;
+  padding: 1.5rem;
+  background: #f3f4f6;
+}

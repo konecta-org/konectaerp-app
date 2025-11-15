@@ -1,1 +1,35 @@
-<p>login works!</p>
+<section class="auth-card">
+  <header>
+    <h1>Welcome back</h1>
+    <p>Sign in with your corporate account to access the ERP workspace.</p>
+  </header>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <label>
+      Email address
+      <input type="email" formControlName="email" placeholder="user@konecta.com" />
+    </label>
+    <div class="error" *ngIf="form.controls.email.invalid && form.controls.email.touched">
+      Please provide a valid email.
+    </div>
+
+    <label>
+      Password
+      <input type="password" formControlName="password" placeholder="••••••••" />
+    </label>
+    <div class="error" *ngIf="form.controls.password.invalid && form.controls.password.touched">
+      Password is required.
+    </div>
+
+    <button type="submit" [disabled]="loading">
+      {{ loading ? 'Signing in…' : 'Sign in' }}
+    </button>
+
+    <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  </form>
+
+  <footer>
+    <span>Don't have access?</span>
+    <a routerLink="/auth/register">Request an account</a>
+  </footer>
+</section>

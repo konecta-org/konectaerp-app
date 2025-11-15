@@ -1,1 +1,43 @@
-<p>register works!</p>
+<section class="auth-card">
+  <header>
+    <h1>Request access</h1>
+    <p>Provide your details and the HR team will activate your account.</p>
+  </header>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <label>
+      Full name
+      <input type="text" formControlName="fullName" />
+    </label>
+    <div class="error" *ngIf="form.controls.fullName.invalid && form.controls.fullName.touched">
+      Please enter your full name.
+    </div>
+
+    <label>
+      Corporate email
+      <input type="email" formControlName="email" />
+    </label>
+    <div class="error" *ngIf="form.controls.email.invalid && form.controls.email.touched">
+      A valid email is required.
+    </div>
+
+    <label>
+      Temporary password
+      <input type="password" formControlName="password" />
+    </label>
+    <div class="error" *ngIf="form.controls.password.invalid && form.controls.password.touched">
+      Password must be at least 6 characters.
+    </div>
+
+    <button type="submit" [disabled]="loading">
+      {{ loading ? 'Submitting…' : 'Submit' }}
+    </button>
+  </form>
+
+  <p class="hint">{{ message }}</p>
+
+  <footer>
+    <span>Already onboard?</span>
+    <a routerLink="/auth/login">Sign in</a>
+  </footer>
+</section>

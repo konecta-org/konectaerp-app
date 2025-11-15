@@ -1,0 +1,34 @@
+<div class="layout">
+  <header class="top-bar">
+    <div class="brand">
+      <span class="logo-dot"></span>
+      <div>
+        <strong>Konecta ERP</strong>
+        <small>Cycle 3</small>
+      </div>
+    </div>
+
+    <nav class="nav-links">
+      <a routerLink="/users" routerLinkActive="active">User Management</a>
+      <a routerLink="/hr/employees" routerLinkActive="active">HR Employees</a>
+      <a routerLink="/workspace/auth-api" routerLinkActive="active">Auth API</a>
+      <a routerLink="/workspace/user-api" routerLinkActive="active">User API</a>
+      <a routerLink="/workspace/hr-api" routerLinkActive="active">HR API</a>
+    </nav>
+
+    <div class="user-meta" *ngIf="currentUser(); else guest">
+      <div class="user-details">
+        <span class="user-email">{{ currentUser()?.email }}</span>
+        <small class="user-roles">{{ currentUser()?.roles?.join(', ') }}</small>
+      </div>
+      <button type="button" (click)="logout()">Logout</button>
+    </div>
+    <ng-template #guest>
+      <a routerLink="/auth/login">Login</a>
+    </ng-template>
+  </header>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

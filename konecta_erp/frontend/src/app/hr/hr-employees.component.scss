@@ -1,0 +1,64 @@
+.panel {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+  }
+
+  p {
+    margin: 0.25rem 0 0;
+    color: #6b7280;
+  }
+
+  button {
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.85rem;
+    background: #0ea5e9;
+    color: #fff;
+    cursor: pointer;
+  }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    text-align: left;
+  }
+
+  th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: #475467;
+  }
+}
+
+.status {
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.85rem;
+}
+
+.empty {
+  margin-top: 1rem;
+  text-align: center;
+  color: #6b7280;
+}

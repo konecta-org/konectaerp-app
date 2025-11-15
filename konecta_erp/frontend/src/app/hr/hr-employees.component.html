@@ -1,0 +1,34 @@
+<section class="panel">
+  <header>
+    <div>
+      <h2>Employees</h2>
+      <p>Live view of HR records coming from the HR microservice.</p>
+    </div>
+    <button type="button" (click)="refresh()" [disabled]="loading()">Refresh</button>
+  </header>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Department</th>
+        <th>Job title</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let employee of employees(); trackBy: trackByEmployee">
+        <td>{{ employee.fullName }}</td>
+        <td>{{ employee.email || '—' }}</td>
+        <td>{{ employee.department || '—' }}</td>
+        <td>{{ employee.jobTitle || '—' }}</td>
+        <td><span class="status">{{ employee.status || 'Active' }}</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="empty" *ngIf="!loading() && employees().length === 0">
+    No employees were returned by the HR service.
+  </div>
+</section>

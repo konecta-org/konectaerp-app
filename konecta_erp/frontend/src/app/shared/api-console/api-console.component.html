@@ -1,0 +1,55 @@
+<section class="api-console" *ngIf="currentEndpoint() as endpoint; else noEndpoints">
+  <header>
+    <div>
+      <h2>{{ title }}</h2>
+      <p>{{ endpoint.description || 'Execute API requests directly against the gateway.' }}</p>
+    </div>
+    <select [value]="endpoint.id" (change)="onEndpointChange($any($event.target).value)">
+      <option *ngFor="let config of endpoints" [value]="config.id">{{ config.method }} {{ config.label }}</option>
+    </select>
+  </header>
+
+  <div class="grid">
+    <form class="request" (ngSubmit)="sendRequest()">
+      <h3>{{ endpoint.method }} {{ endpoint.pathTemplate }}</h3>
+
+      <section *ngIf="pathForm.controls | keyvalue as controls" class="field-group" [ngClass]="{ hidden: controls.length === 0 }">
+        <h4>Path parameters</h4>
+        <div class="row" *ngFor="let control of controls">
+          <label [for]="control.key">{{ control.key }}</label>
+          <input [id]="control.key" type="text" [formControl]="pathForm.get(control.key)" placeholder="value" />
+        </div>
+      </section>
+
+      <section *ngIf="queryForm.controls | keyvalue as queries" class="field-group" [ngClass]="{ hidden: queries.length === 0 }">
+        <h4>Query parameters</h4>
+        <div class="row" *ngFor="let query of queries">
+          <label [for]="query.key">{{ query.key }}</label>
+          <input [id]="query.key" type="text" [formControl]="queryForm.get(query.key)" placeholder="value" />
+        </div>
+      </section>
+
+      <section *ngIf="endpoint.method !== 'GET' && endpoint.method !== 'DELETE'" class="field-group">
+        <h4>Request body (JSON)</h4>
+        <textarea [formControl]="bodyControl" rows="8"></textarea>
+      </section>
+
+      <button type="submit" [disabled]="loading()">Send request</button>
+    </form>
+
+    <aside class="response">
+      <h3>Response</h3>
+      <pre *ngIf="responseBody(); else showError">{{ responseBody() }}</pre>
+      <ng-template #showError>
+        <pre class="error" *ngIf="errorMessage(); else empty">{{ errorMessage() }}</pre>
+        <ng-template #empty>
+          <p>No response yet.</p>
+        </ng-template>
+      </ng-template>
+    </aside>
+  </div>
+</section>
+
+<ng-template #noEndpoints>
+  <p>No endpoints configured.</p>
+</ng-template>
