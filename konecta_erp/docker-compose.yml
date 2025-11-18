@@ -113,6 +113,18 @@ services:
     networks:
       - erp-network
 
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    depends_on:
+      - api-gateway
+    ports:
+      - "4200:80"
+    networks:
+      - erp-network
+
   reporting-service:
     build:
       context: backend/ReportingService

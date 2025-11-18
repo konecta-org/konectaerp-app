@@ -22,17 +22,69 @@ DECLARE @SuperAdminRoleId INT;
 SELECT @SuperAdminRoleId = Id FROM Roles WHERE Name = 'System Admin';
 
 -- Insert all permissions for SuperAdmin
-DECLARE @Permissions TABLE (Name NVARCHAR(100), Category NVARCHAR(64));
+DECLARE @Permissions TABLE (Name NVARCHAR(128), Category NVARCHAR(64));
 
-INSERT INTO @Permissions VALUES 
-('users.view', 'users'), ('users.create', 'users'), ('users.edit', 'users'), ('users.delete', 'users'),
-('roles.view', 'roles'), ('roles.create', 'roles'), ('roles.edit', 'roles'), ('roles.delete', 'roles'),
-('permissions.view', 'permissions'), ('permissions.create', 'permissions'), ('permissions.edit', 'permissions'), ('permissions.delete', 'permissions'),
-('employees.view', 'employees'), ('employees.create', 'employees'), ('employees.edit', 'employees'), ('employees.delete', 'employees'),
-('departments.view', 'departments'), ('departments.create', 'departments'), ('departments.edit', 'departments'), ('departments.delete', 'departments'),
-('finance.view', 'finance'), ('finance.create', 'finance'), ('finance.edit', 'finance'), ('finance.delete', 'finance'),
-('inventory.view', 'inventory'), ('inventory.create', 'inventory'), ('inventory.edit', 'inventory'), ('inventory.delete', 'inventory'),
-('reports.view', 'reports'), ('reports.create', 'reports'), ('reports.edit', 'reports'), ('reports.delete', 'reports');
+-- User Management
+INSERT INTO @Permissions VALUES
+('user-management.users.read', 'user-management'),
+('user-management.users.manage', 'user-management'),
+('user-management.roles.read', 'user-management'),
+('user-management.roles.manage', 'user-management'),
+('user-management.permissions.read', 'user-management'),
+('user-management.permissions.manage', 'user-management');
+
+-- Finance
+INSERT INTO @Permissions VALUES
+('finance.budgets.read', 'finance'),
+('finance.budgets.manage', 'finance'),
+('finance.expenses.read', 'finance'),
+('finance.expenses.manage', 'finance'),
+('finance.invoices.read', 'finance'),
+('finance.invoices.manage', 'finance'),
+('finance.payroll.read', 'finance'),
+('finance.payroll.manage', 'finance'),
+('finance.compensation.read', 'finance'),
+('finance.compensation.manage', 'finance'),
+('finance.summary.view', 'finance');
+
+-- HR
+INSERT INTO @Permissions VALUES
+('hr.employees.read', 'hr'),
+('hr.employees.manage', 'hr'),
+('hr.attendance.read', 'hr'),
+('hr.attendance.manage', 'hr'),
+('hr.departments.read', 'hr'),
+('hr.departments.manage', 'hr'),
+('hr.leaves.read', 'hr'),
+('hr.leaves.manage', 'hr'),
+('hr.job-openings.read', 'hr'),
+('hr.job-openings.manage', 'hr'),
+('hr.job-applications.read', 'hr'),
+('hr.job-applications.manage', 'hr'),
+('hr.interviews.read', 'hr'),
+('hr.interviews.manage', 'hr'),
+('hr.resignations.read', 'hr'),
+('hr.resignations.manage', 'hr'),
+('hr.summary.view', 'hr');
+
+-- Inventory
+INSERT INTO @Permissions VALUES
+('inventory.items.read', 'inventory'),
+('inventory.items.manage', 'inventory'),
+('inventory.warehouses.read', 'inventory'),
+('inventory.warehouses.manage', 'inventory'),
+('inventory.stock.read', 'inventory'),
+('inventory.stock.manage', 'inventory'),
+('inventory.summary.view', 'inventory');
+
+-- Reporting
+INSERT INTO @Permissions VALUES
+('reporting.overview.view', 'reporting'),
+('reporting.finance.view', 'reporting'),
+('reporting.hr.view', 'reporting'),
+('reporting.inventory.view', 'reporting'),
+('reporting.export.pdf', 'reporting'),
+('reporting.export.excel', 'reporting');
 
 -- Insert permissions that don't exist
 INSERT INTO Permissions (Name, Description, Category, IsActive, CreatedAt, UpdatedAt)

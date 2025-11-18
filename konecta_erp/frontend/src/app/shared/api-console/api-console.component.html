@@ -17,7 +17,7 @@
         <h4>Path parameters</h4>
         <div class="row" *ngFor="let control of controls">
           <label [for]="control.key">{{ control.key }}</label>
-          <input [id]="control.key" type="text" [formControl]="pathForm.get(control.key)" placeholder="value" />
+          <input [id]="control.key" type="text" [formControl]="pathControl(control.key)" placeholder="value" />
         </div>
       </section>
 
@@ -25,7 +25,7 @@
         <h4>Query parameters</h4>
         <div class="row" *ngFor="let query of queries">
           <label [for]="query.key">{{ query.key }}</label>
-          <input [id]="query.key" type="text" [formControl]="queryForm.get(query.key)" placeholder="value" />
+          <input [id]="query.key" type="text" [formControl]="queryControl(query.key)" placeholder="value" />
         </div>
       </section>
 

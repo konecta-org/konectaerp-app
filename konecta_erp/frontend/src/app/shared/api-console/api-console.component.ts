@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Component, Input, OnChanges, SimpleChanges, computed, inject, signal } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { environment } from '../../../environments/environment';
 import { ApiEndpoint } from './api-endpoint.model';
 
@@ -21,6 +21,8 @@ export class ApiConsoleComponent implements OnChanges {
   readonly errorMessage = signal<string>('');
   readonly loading = signal(false);
 
+  private readonly fb = inject(FormBuilder);
+
   pathForm: FormGroup = this.fb.group({});
   queryForm: FormGroup = this.fb.group({});
   bodyControl = this.fb.control('', { nonNullable: true });
@@ -34,7 +36,6 @@ export class ApiConsoleComponent implements OnChanges {
     return this.endpoints.length > 0 ? this.endpoints[0] : null;
   });
 
-  private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -104,14 +105,14 @@ export class ApiConsoleComponent implements OnChanges {
 
   private rebuildForms(endpoint: ApiEndpoint): void {
     const placeholders = Array.from(endpoint.pathTemplate.matchAll(/\{([^}]+)\}/g)).map(match => match[1]);
-    const pathControls = placeholders.reduce<Record<string, unknown>>((acc, param) => {
-      acc[param] = this.fb.control('');
+    const pathControls = placeholders.reduce<Record<string, FormControl<string>>>((acc, param) => {
+      acc[param] = this.fb.control<string>('', { nonNullable: true });
       return acc;
     }, {});
     this.pathForm = this.fb.group(pathControls);
 
-    const queryControls = (endpoint.queryParameters ?? []).reduce<Record<string, unknown>>((acc, param) => {
-      acc[param] = this.fb.control('');
+    const queryControls = (endpoint.queryParameters ?? []).reduce<Record<string, FormControl<string>>>((acc, param) => {
+      acc[param] = this.fb.control<string>('', { nonNullable: true });
       return acc;
     }, {});
     this.queryForm = this.fb.group(queryControls);
@@ -123,7 +124,7 @@ export class ApiConsoleComponent implements OnChanges {
   private buildUrl(endpoint: ApiEndpoint): string {
     let finalPath = endpoint.pathTemplate;
     Object.entries(this.pathForm.value).forEach(([key, value]) => {
-      const replacement = encodeURIComponent(value ?? '');
+      const replacement = encodeURIComponent(String(value ?? ''));
       finalPath = finalPath.replace(new RegExp(`{${key}}`, 'g'), replacement);
     });
 
@@ -151,5 +152,13 @@ export class ApiConsoleComponent implements OnChanges {
     } catch {
       return null;
     }
+  }
+
+  pathControl(key: string): FormControl<string> {
+    return this.pathForm.get(key) as FormControl<string>;
+  }
+
+  queryControl(key: string): FormControl<string> {
+    return this.queryForm.get(key) as FormControl<string>;
   }
 }

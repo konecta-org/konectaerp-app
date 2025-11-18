@@ -104,3 +104,5 @@ ServiceConfig:
   Scheme: http
   RegisterWithConsul: true
   FailFast: false
+
+
