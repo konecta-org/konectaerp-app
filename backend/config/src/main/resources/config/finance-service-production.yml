@@ -1,0 +1,32 @@
+ConnectionStrings:
+  DefaultConnection: ${DB_CONNECTION_STRING:Server=sqlserver,1433;Database=Konecta_Finance;User Id=sa;Password=pa55w0rd!;TrustServerCertificate=True;}
+
+RabbitMq:
+  HostName: ${RABBITMQ_HOST:rabbitmq}
+  Port: ${RABBITMQ_PORT:5672}
+  UserName: ${RABBITMQ_USERNAME:guest}
+  Password: ${RABBITMQ_PASSWORD:guest}
+  VirtualHost: ${RABBITMQ_VHOST:/}
+  Exchange: konecta.erp
+  CompensationEventsQueue: finance.compensation.events
+  CompensationProvisionedRoutingKey: finance.compensation.provisioned
+  CompensationBonusesRoutingKey: finance.compensation.bonuses
+  CompensationDeductionsRoutingKey: finance.compensation.deductions
+
+Consul:
+  Host: ${CONSUL_HOST:http://consul-server:8500}
+
+JwtSettings:
+  Issuer: ${JWT_ISSUER:KonectaERP}
+  Audience: ${JWT_AUDIENCE:KonectaERPUsers}
+  JwksUri: ${AUTH_JWKS_URI:http://authentication-service:7280/.well-known/jwks.json}
+  RequireHttpsMetadata: ${JWT_REQUIRE_HTTPS:false}
+  CacheDurationMinutes: 30
+
+ServiceConfig:
+  ServiceName: finance-service
+  Host: 0.0.0.0
+  PublicHost: ${SERVICE_PUBLIC_HOST:finance-service}
+  Port: 5003
+  RegisterWithConsul: ${CONSUL_REGISTER:true}
+  FailFast: false

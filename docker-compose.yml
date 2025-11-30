@@ -10,6 +10,7 @@ services:
       - "1433:1433"
     volumes:
       - sqlserver-data:/var/opt/mssql
+      - ./scripts:/scripts
     networks:
       - erp-network
     healthcheck:
@@ -28,7 +29,7 @@ services:
     environment:
       SA_PASSWORD: "pa55w0rd!"
     volumes:
-      - ./docker/sqlserver:/scripts:ro
+      - ./scripts:/scripts:ro
     entrypoint:
       [
         "/bin/bash",
@@ -123,6 +124,8 @@ services:
       context: frontend
       dockerfile: Dockerfile
     container_name: frontend
+    environment:
+      PRODUCTION: "false"
     depends_on:
       - api-gateway
     ports:
@@ -265,6 +268,24 @@ services:
         condition: service_started
     ports:
       - "5078:5078"
+    networks:
+      - erp-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - erp-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
     networks:
       - erp-network
 

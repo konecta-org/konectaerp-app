@@ -1,0 +1,84 @@
+<div class="data-table-container">
+  @if (loading) {
+    <div class="table-loading">
+      <div class="spinner"></div>
+      <p>Loading data...</p>
+    </div>
+  } @else {
+    @if (data.length === 0) {
+      <div class="table-empty">
+        <p>{{ emptyMessage }}</p>
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              @for (column of columns; track column.key) {
+                <th 
+                  [class.sortable]="column.sortable"
+                  (click)="onSort(column)">
+                  <div class="th-content">
+                    <span>{{ column.label }}</span>
+                    @if (column.sortable && currentSort?.column === column.key) {
+                      <span class="sort-icon">
+                        {{ currentSort.direction === 'asc' ? '↑' : '↓' }}
+                      </span>
+                    }
+                  </div>
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of data; track $index) {
+              <tr (click)="onRowClick(row)">
+                @for (column of columns; track column.key) {
+                  <td>
+                    @if (column.template) {
+                      <ng-container *ngTemplateOutlet="column.template; context: { $implicit: row }"></ng-container>
+                    } @else {
+                      {{ getCellValue(row, column) }}
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (showPagination && totalPages > 1) {
+        <div class="table-pagination">
+          <div class="pagination-info">
+            Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, totalItems) }} of {{ totalItems }} results
+          </div>
+          <div class="pagination-controls">
+            <button 
+              class="page-btn"
+              [disabled]="currentPage === 1"
+              (click)="onPageChange(currentPage - 1)">
+              Previous
+            </button>
+            
+            @for (page of pages; track page) {
+              <button 
+                class="page-btn"
+                [class.active]="page === currentPage"
+                (click)="onPageChange(page)">
+                {{ page }}
+              </button>
+            }
+            
+            <button 
+              class="page-btn"
+              [disabled]="currentPage === totalPages"
+              (click)="onPageChange(currentPage + 1)">
+              Next
+            </button>
+          </div>
+        </div>
+      }
+    }
+  }
+</div>

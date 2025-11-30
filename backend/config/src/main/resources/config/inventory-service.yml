@@ -7,7 +7,7 @@ Consul:
 JwtSettings:
   Issuer: KonectaERP
   Audience: KonectaERPUsers
-  JwksUri: http://authentication-service:7280/.well-known/jwks.json}
+  JwksUri: http://authentication-service:7280/.well-known/jwks.json
   RequireHttpsMetadata: false
   CacheDurationMinutes: 30
 

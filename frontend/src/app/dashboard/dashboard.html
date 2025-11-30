@@ -1,1 +1,209 @@
-<p>dashboard works!</p>
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <div>
+      <h1 class="dashboard-title">Dashboard</h1>
+      <p class="dashboard-subtitle">Welcome back! Here's what's happening today.</p>
+    </div>
+    <button class="btn-refresh" (click)="refresh()" [disabled]="loading()">
+      <span class="refresh-icon">↻</span>
+      Refresh
+    </button>
+  </div>
+
+  @if (loading()) {
+    <app-loading-spinner [size]="'large'" [message]="'Loading dashboard...'"></app-loading-spinner>
+  } @else if (summary()) {
+    <!-- User Management Summary -->
+    <section class="dashboard-section">
+      <h2 class="section-title">User Management</h2>
+      <div class="stats-grid">
+        <app-stat-card
+          [label]="'Total Users'"
+          [value]="summary()!.userSummary.totalUsers"
+          [icon]="'👥'"
+          [color]="'blue'"
+          [clickable]="true"
+          routerLink="/users">
+        </app-stat-card>
+        
+        <app-stat-card
+          [label]="'Active Users'"
+          [value]="summary()!.userSummary.activeUsers"
+          [icon]="'✓'"
+          [color]="'green'">
+        </app-stat-card>
+        
+        <app-stat-card
+          [label]="'New This Month'"
+          [value]="summary()!.userSummary.newUsersThisMonth"
+          [icon]="'📈'"
+          [color]="'purple'"
+          [trend]="'up'"
+          [trendValue]="'+' + summary()!.userSummary.newUsersThisMonth">
+        </app-stat-card>
+        
+        <app-stat-card
+          [label]="'Inactive Users'"
+          [value]="summary()!.userSummary.inactiveUsers"
+          [icon]="'⏸'"
+          [color]="'yellow'">
+        </app-stat-card>
+      </div>
+    </section>
+
+    <!-- HR Summary -->
+    <section class="dashboard-section">
+      <h2 class="section-title">Human Resources</h2>
+      <div class="stats-grid">
+        <app-stat-card
+          [label]="'Total Employees'"
+          [value]="summary()!.hrSummary.totalEmployees"
+          [icon]="'👨‍💼'"
+          [color]="'blue'"
+          [clickable]="true"
+          routerLink="/hr/employees">
+        </app-stat-card>
+        
+        <app-stat-card
+          [label]="'Active Employees'"
+          [value]="summary()!.hrSummary.activeEmployees"
+          [icon]="'✓'"
+          [color]="'green'">
+        </app-stat-card>
+        
+        <app-stat-card
+          [label]="'Departments'"
+          [value]="summary()!.hrSummary.departmentCount"
+          [icon]="'🏢'"
+          [color]="'purple'"
+          [clickable]="true"
+          routerLink="/hr/departments">
+        </app-stat-card>
+        
+        <app-stat-card
+          [label]="'Pending Leave Requests'"
+          [value]="summary()!.hrSummary.pendingLeaveRequests"
+          [icon]="'📋'"
+          [color]="summary()!.hrSummary.pendingLeaveRequests > 0 ? 'yellow' : 'green'"
+          [clickable]="true"
+          routerLink="/hr/leave-requests">
+        </app-stat-card>
+      </div>
+    </section>
+
+    <!-- Finance Summary -->
+    <section class="dashboard-section">
+      <h2 class="section-title">Finance</h2>
+      <div class="stats-grid">
+        <app-stat-card
+          [label]="'Total Revenue'"
+          [value]="'$' + summary()!.financeSummary.totalRevenue.toLocaleString()"
+          [icon]="'💰'"
+          [color]="'green'"
+          [trend]="'up'">
+        </app-stat-card>
+        
+        <app-stat-card
+          [label]="'Total Expenses'"
+          [value]="'$' + summary()!.financeSummary.totalExpenses.toLocaleString()"
+          [icon]="'💸'"
+          [color]="'red'"
+          [clickable]="true"
+          routerLink="/finance/expenses">
+        </app-stat-card>
+        
+        <app-stat-card
+          [label]="'Pending Invoices'"
+          [value]="summary()!.financeSummary.pendingInvoices"
+          [icon]="'📄'"
+          [color]="'yellow'"
+          [clickable]="true"
+          routerLink="/finance/invoices">
+        </app-stat-card>
+        
+        <app-stat-card
+          [label]="'Budget Utilization'"
+          [value]="summary()!.financeSummary.budgetUtilization + '%'"
+          [icon]="'📊'"
+          [color]="summary()!.financeSummary.budgetUtilization > 80 ? 'red' : 'blue'">
+        </app-stat-card>
+      </div>
+    </section>
+
+    <!-- Inventory Summary -->
+    <section class="dashboard-section">
+      <h2 class="section-title">Inventory</h2>
+      <div class="stats-grid">
+        <app-stat-card
+          [label]="'Total Items'"
+          [value]="summary()!.inventorySummary.totalItems"
+          [icon]="'📦'"
+          [color]="'blue'"
+          [clickable]="true"
+          routerLink="/inventory/items">
+        </app-stat-card>
+        
+        <app-stat-card
+          [label]="'Low Stock Items'"
+          [value]="summary()!.inventorySummary.lowStockItems"
+          [icon]="'⚠️'"
+          [color]="summary()!.inventorySummary.lowStockItems > 0 ? 'red' : 'green'"
+          [clickable]="true"
+          routerLink="/inventory/items">
+        </app-stat-card>
+        
+        <app-stat-card
+          [label]="'Total Value'"
+          [value]="'$' + summary()!.inventorySummary.totalValue.toLocaleString()"
+          [icon]="'💎'"
+          [color]="'purple'">
+        </app-stat-card>
+        
+        <app-stat-card
+          [label]="'Recent Transactions'"
+          [value]="summary()!.inventorySummary.recentTransactions"
+          [icon]="'🔄'"
+          [color]="'blue'"
+          [clickable]="true"
+          routerLink="/inventory/transactions">
+        </app-stat-card>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="dashboard-section">
+      <h2 class="section-title">Quick Actions</h2>
+      <div class="quick-actions">
+        <a routerLink="/users/create" class="quick-action-card">
+          <span class="action-icon">➕</span>
+          <span class="action-label">Add User</span>
+        </a>
+        
+        <a routerLink="/hr/employees/create" class="quick-action-card">
+          <span class="action-icon">👤</span>
+          <span class="action-label">Add Employee</span>
+        </a>
+        
+        <a routerLink="/finance/expenses" class="quick-action-card">
+          <span class="action-icon">💵</span>
+          <span class="action-label">Record Expense</span>
+        </a>
+        
+        <a routerLink="/inventory/items/create" class="quick-action-card">
+          <span class="action-icon">📦</span>
+          <span class="action-label">Add Inventory Item</span>
+        </a>
+        
+        <a routerLink="/reporting/overview" class="quick-action-card">
+          <span class="action-icon">📊</span>
+          <span class="action-label">View Reports</span>
+        </a>
+        
+        <a routerLink="/profile" class="quick-action-card">
+          <span class="action-icon">⚙️</span>
+          <span class="action-label">Settings</span>
+        </a>
+      </div>
+    </section>
+  }
+</div>

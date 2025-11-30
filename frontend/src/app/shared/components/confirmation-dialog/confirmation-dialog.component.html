@@ -1,0 +1,21 @@
+<app-modal [title]="title" [size]="'small'" [showFooter]="false" (close)="onCancel()">
+  <div class="confirmation-content">
+    <div class="confirmation-icon" [class.danger]="danger">
+      {{ danger ? '⚠' : 'ℹ' }}
+    </div>
+    <p class="confirmation-message">{{ message }}</p>
+  </div>
+  
+  <div modal-footer class="confirmation-actions">
+    <button class="btn btn-secondary" (click)="onCancel()">
+      {{ cancelText }}
+    </button>
+    <button 
+      class="btn" 
+      [class.btn-danger]="danger" 
+      [class.btn-primary]="!danger"
+      (click)="onConfirm()">
+      {{ confirmText }}
+    </button>
+  </div>
+</app-modal>

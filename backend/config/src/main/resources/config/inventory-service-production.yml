@@ -1,0 +1,20 @@
+ConnectionStrings:
+  DefaultConnection: ${DB_CONNECTION_STRING:Server=sqlserver,1433;Database=Konecta_Inventory;User Id=sa;Password=pa55w0rd!;TrustServerCertificate=True;}
+
+Consul:
+  Host: ${CONSUL_HOST:http://consul-server:8500}
+
+JwtSettings:
+  Issuer: ${JWT_ISSUER:KonectaERP}
+  Audience: ${JWT_AUDIENCE:KonectaERPUsers}
+  JwksUri: ${AUTH_JWKS_URI:http://authentication-service:7280/.well-known/jwks.json}
+  RequireHttpsMetadata: ${JWT_REQUIRE_HTTPS:false}
+  CacheDurationMinutes: 30
+
+ServiceConfig:
+  ServiceName: inventory-service
+  Host: 0.0.0.0
+  PublicHost: ${SERVICE_PUBLIC_HOST:inventory-service}
+  Port: 5020
+  RegisterWithConsul: ${CONSUL_REGISTER:true}
+  FailFast: false

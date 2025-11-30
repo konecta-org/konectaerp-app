@@ -1,0 +1,55 @@
+ConnectionStrings:
+  DefaultConnection: ${DB_CONNECTION_STRING:Server=sqlserver,1433;Database=Konecta_Auth;User Id=sa;Password=pa55w0rd!;TrustServerCertificate=True;}
+
+RabbitMq:
+  HostName: ${RABBITMQ_HOST:rabbitmq}
+  Port: ${RABBITMQ_PORT:5672}
+  UserName: ${RABBITMQ_USERNAME:guest}
+  Password: ${RABBITMQ_PASSWORD:guest}
+  VirtualHost: ${RABBITMQ_VHOST:/}
+  Exchange: konecta.erp
+  EmployeeCreatedQueue: auth.employee-created
+  EmployeeCreatedRoutingKey: hr.employee.created
+  EmployeeExitedRoutingKey: hr.employee.exited
+  EmployeeResignationApprovedRoutingKey: hr.employee.resignation.approved
+  EmployeeTerminatedRoutingKey: hr.employee.terminated
+  UserProvisionedRoutingKey: auth.user.provisioned
+  UserDeactivatedRoutingKey: auth.user.deactivated
+  UserResignedRoutingKey: auth.user.resigned
+  UserTerminatedRoutingKey: auth.user.terminated
+
+Email:
+  FromAddress: ${SMTP_FROM_ADDRESS:no-reply@konecta.local}
+  FromDisplayName: ${SMTP_FROM_NAME:Konecta HR}
+  SmtpHost: ${SMTP_HOST:mailhog}
+  SmtpPort: ${SMTP_PORT:1025}
+  UseSsl: ${SMTP_USE_SSL:false}
+  UserName: ${SMTP_USERNAME:}
+  Password: ${SMTP_PASSWORD:}
+
+JwtSettings:
+  Issuer: ${JWT_ISSUER:KonectaERP}
+  Audience: ${JWT_AUDIENCE:KonectaERPUsers}
+  ExpirationMinutes: ${JWT_EXPIRATION_MINUTES:60}
+  RefreshTokenExpirationDays: ${JWT_REFRESH_EXPIRATION_DAYS:7}
+  Keys:
+    - Id: ${JWT_KEY_ID:key-202501}
+      IsCurrent: true
+      PrivateKeyPem: ${JWT_PRIVATE_KEY}
+      PublicKeyPem: ${JWT_PUBLIC_KEY}
+
+ServiceAuth:
+  SharedSecret: ${SERVICE_SHARED_SECRET}
+  UserManagementBaseUrl: ${USER_MANAGEMENT_SERVICE_URL:http://user-management-service:5078}
+
+Consul:
+  Host: ${CONSUL_HOST:http://consul-server:8500}
+
+ServiceConfig:
+  ServiceName: authentication-service
+  Host: 0.0.0.0
+  PublicHost: ${SERVICE_PUBLIC_HOST:authentication-service}
+  Port: 7280
+  Scheme: ${SERVICE_SCHEME:http}
+  RegisterWithConsul: ${CONSUL_REGISTER:true}
+  FailFast: false

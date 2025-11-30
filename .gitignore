@@ -44,6 +44,10 @@ Release/
 .env
 .env.*
 
+# Keep environment example/template files
+!.env.example
+!.env.*.example
+
 # Keep environment configs shared between developers
 !appsettings.Development.json
 !appsettings.Production.json
