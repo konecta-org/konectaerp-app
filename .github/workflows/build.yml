@@ -11,6 +11,11 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REPOSITORY: konecta-erp
 
+permissions:
+  contents: read
+  security-events: read
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
