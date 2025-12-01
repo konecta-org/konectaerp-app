@@ -22,58 +22,44 @@ jobs:
       matrix:
         service:
           - name: config-server
-            context: konecta_erp/backend/config
-            dockerfile: konecta_erp/backend/config/Dockerfile
+            context: /backend/config
+            dockerfile: /backend/config/Dockerfile
+
           - name: api-gateway
-            context: konecta_erp/backend/ApiGateWay
-            dockerfile: konecta_erp/backend/ApiGateWay/Dockerfile
+            context: /backend/ApiGateWay
+            dockerfile: /backend/ApiGateWay/Dockerfile
+
           - name: authentication-service
-            context: konecta_erp
-            dockerfile: konecta_erp/backend/AuthenticationService/Dockerfile
+            context:
+            dockerfile: /backend/AuthenticationService/Dockerfile
+
           - name: hr-service
-            context: konecta_erp
-            dockerfile: konecta_erp/backend/HrService/Dockerfile
+            context:
+            dockerfile: /backend/HrService/Dockerfile
+
           - name: inventory-service
-            context: konecta_erp
-            dockerfile: konecta_erp/backend/InventoryService/Dockerfile
+            context:
+            dockerfile: /backend/InventoryService/Dockerfile
+
           - name: finance-service
-            context: konecta_erp
-            dockerfile: konecta_erp/backend/FinanceService/Dockerfile
+            context:
+            dockerfile: /backend/FinanceService/Dockerfile
+
           - name: user-management-service
-            context: konecta_erp
-            dockerfile: konecta_erp/backend/UserManagementService/Dockerfile
+            context:
+            dockerfile: /backend/UserManagementService/Dockerfile
+
           - name: reporting-service
-            context: konecta_erp/backend/ReportingService
-            dockerfile: konecta_erp/backend/ReportingService/Dockerfile
+            context: /backend/ReportingService
+            dockerfile: /backend/ReportingService/Dockerfile
+
           - name: frontend
-            context: konecta_erp/frontend
-            dockerfile: konecta_erp/frontend/Dockerfile
+            context: /frontend
+            dockerfile: /frontend/Dockerfile
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      # - name: Load current version
-      #   id: load_version
-      #   run: |
-      #     if [ ! -f VERSION ]; then echo "1.0.0" > VERSION; fi
-      #     CURRENT=$(cat VERSION)
-      #     echo "current=$CURRENT" >> $GITHUB_OUTPUT
-
-      # - name: Increment version (patch)
-      #   id: bump_version
-      #   run: |
-      #     IFS='.' read -r major minor patch <<< "${{ steps.load_version.outputs.current }}"
-      #     patch=$((patch + 1))
-      #     NEW_VERSION="$major.$minor.$patch"
-      #     echo "$NEW_VERSION" > VERSION
-      #     echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-      # - name: Commit new VERSION file
-      #   uses: stefanzweifel/git-auto-commit-action@v5
-      #   with:
-      #     file_pattern: VERSION
-      #     commit_message: "Bump version to ${{ steps.bump_version.outputs.version }}"
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -108,6 +94,23 @@ jobs:
             ${{ matrix.service.context }}
           docker push ${IMAGE_NAME}:${{ github.sha }}
           docker push ${IMAGE_NAME}:${{ steps.env-tag.outputs.tag }}
+
+      - name: Scan with Trivy
+        id: trivy
+        uses: aquasecurity/trivy-action@v0.22.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ matrix.service.name }}:${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: false
+          exit-code: 1
+
+      - name: Upload SARIF report
+        if: always()
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: trivy-results.sarif
 
       - name: Output image digest
         run: |

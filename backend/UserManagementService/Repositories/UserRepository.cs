@@ -114,12 +114,24 @@ namespace UserManagementService.Repositories
 
         public async Task<UserSummaryData> GetSummaryAsync(CancellationToken cancellationToken = default)
         {
-            var baseQuery = _context.Users.AsNoTracking();
-
-            var totalUsersTask = baseQuery.CountAsync(cancellationToken);
-            var activeUsersTask = baseQuery.CountAsync(user => !user.IsDeleted && user.Status == "Active", cancellationToken);
-            var lockedUsersTask = baseQuery.CountAsync(user => user.IsLocked && !user.IsDeleted, cancellationToken);
-            var deletedUsersTask = baseQuery.CountAsync(user => user.IsDeleted, cancellationToken);
+            // Create independent queries to avoid DbContext threading issues
+            // Each query gets its own IQueryable to prevent concurrent operations on the same context
+            
+            var totalUsersTask = _context.Users
+                .AsNoTracking()
+                .CountAsync(cancellationToken);
+                
+            var activeUsersTask = _context.Users
+                .AsNoTracking()
+                .CountAsync(user => !user.IsDeleted && user.Status == "Active", cancellationToken);
+                
+            var lockedUsersTask = _context.Users
+                .AsNoTracking()
+                .CountAsync(user => user.IsLocked && !user.IsDeleted, cancellationToken);
+                
+            var deletedUsersTask = _context.Users
+                .AsNoTracking()
+                .CountAsync(user => user.IsDeleted, cancellationToken);
 
             var roleCountsTask = _context.UserRoles
                 .AsNoTracking()
@@ -128,7 +140,8 @@ namespace UserManagementService.Repositories
                 .Select(group => new { Role = group.Key, Count = group.Count() })
                 .ToDictionaryAsync(group => group.Role, group => group.Count, cancellationToken);
 
-            var departmentCountsTask = baseQuery
+            var departmentCountsTask = _context.Users
+                .AsNoTracking()
                 .Where(user => !user.IsDeleted && user.Department != null && user.Department != string.Empty)
                 .GroupBy(user => user.Department!)
                 .Select(group => new { Department = group.Key, Count = group.Count() })
