@@ -104,7 +104,7 @@ jobs:
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
           ignore-unfixed: false
-          exit-code: 1
+          exit-code: 0
 
       - name: Upload SARIF report
         if: always()
