@@ -19,42 +19,43 @@ jobs:
       id-token: write
 
     strategy:
+      max-parallel: 2
       matrix:
         service:
           - name: config-server
-            context: /backend/config
-            dockerfile: /backend/config/Dockerfile
+            context: ./backend/config
+            dockerfile: ./backend/config/Dockerfile
 
           - name: api-gateway
-            context: /backend/ApiGateWay
-            dockerfile: /backend/ApiGateWay/Dockerfile
+            context: ./backend/ApiGateWay
+            dockerfile: ./backend/ApiGateWay/Dockerfile
 
           - name: authentication-service
             context:
-            dockerfile: /backend/AuthenticationService/Dockerfile
+            dockerfile: ./backend/AuthenticationService/Dockerfile
 
           - name: hr-service
             context:
-            dockerfile: /backend/HrService/Dockerfile
+            dockerfile: ./backend/HrService/Dockerfile
 
           - name: inventory-service
             context:
-            dockerfile: /backend/InventoryService/Dockerfile
+            dockerfile: ./backend/InventoryService/Dockerfile
 
           - name: finance-service
             context:
-            dockerfile: /backend/FinanceService/Dockerfile
+            dockerfile: ./backend/FinanceService/Dockerfile
 
           - name: user-management-service
             context:
-            dockerfile: /backend/UserManagementService/Dockerfile
+            dockerfile: ./backend/UserManagementService/Dockerfile
 
           - name: reporting-service
             context: /backend/ReportingService
             dockerfile: /backend/ReportingService/Dockerfile
 
           - name: frontend
-            context: /frontend
+            context: ./frontend
             dockerfile: /frontend/Dockerfile
 
     steps:
