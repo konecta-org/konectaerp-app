@@ -12,7 +12,6 @@ env:
   REPOSITORY: konecta-erp
 
 permissions:
-  security-events: read
   security-events: write
   contents: read
   id-token: write

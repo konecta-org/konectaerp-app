@@ -4,13 +4,11 @@ on:
   pull_request:
     branches: [main, staging, develop]
     paths:
-      - 'frontend/**'
+      - "frontend/**"
   push:
     branches: [main, staging, develop]
     paths:
-      - 'frontend/**'
-
-  
+      - "frontend/**"
 
 env:
   REGISTRY: us-central1-docker.pkg.dev
@@ -19,7 +17,6 @@ env:
   FRONTEND_NAME: frontend
 
 permissions:
-  security-events: read
   security-events: write
   contents: read
   id-token: write
