@@ -3,13 +3,20 @@ name: Build and Push Docker Images
 on:
   pull_request:
     branches: [main, staging, develop]
+    paths:
+      - 'frontend/**'
   push:
     branches: [main, staging, develop]
+    paths:
+      - 'frontend/**'
+
+  
 
 env:
   REGISTRY: us-central1-docker.pkg.dev
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REPOSITORY: konecta-erp
+  FRONTEND_NAME: frontend
 
 permissions:
   security-events: read
@@ -20,42 +27,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 2
-      matrix:
-        service:
-          - name: config-server
-            context: ./backend/config
-            dockerfile: ./backend/config/Dockerfile
-
-          - name: api-gateway
-            context: ./backend/ApiGateWay
-            dockerfile: ./backend/ApiGateWay/Dockerfile
-
-          - name: authentication-service
-            context:
-            dockerfile: ./backend/AuthenticationService/Dockerfile
-
-          - name: hr-service
-            context:
-            dockerfile: ./backend/HrService/Dockerfile
-
-          - name: inventory-service
-            context:
-            dockerfile: ./backend/InventoryService/Dockerfile
-
-          - name: finance-service
-            context:
-            dockerfile: ./backend/FinanceService/Dockerfile
-
-          - name: user-management-service
-            context:
-            dockerfile: ./backend/UserManagementService/Dockerfile
-
-          - name: reporting-service
-            context: /backend/ReportingService
-            dockerfile: /backend/ReportingService/Dockerfile
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -84,14 +55,14 @@ jobs:
             echo "tag=dev-latest" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push ${{ matrix.service.name }}
+      - name: Build and push ${{ env.FRONTEND_NAME }}
         run: |
-          IMAGE_NAME="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ matrix.service.name }}"
+          IMAGE_NAME="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_NAME }}"
           docker build \
             -t ${IMAGE_NAME}:${{ github.sha }} \
             -t ${IMAGE_NAME}:${{ steps.env-tag.outputs.tag }} \
-            -f ${{ matrix.service.dockerfile }} \
-            ${{ matrix.service.context }}
+            -f /frontend/Dockerfile \
+            /frontend
           docker push ${IMAGE_NAME}:${{ github.sha }}
           docker push ${IMAGE_NAME}:${{ steps.env-tag.outputs.tag }}
 
@@ -99,7 +70,7 @@ jobs:
         id: trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ matrix.service.name }}:${{ github.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_NAME }}:${{ github.sha }}
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
@@ -114,4 +85,4 @@ jobs:
 
       - name: Output image digest
         run: |
-          echo "Image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ matrix.service.name }}:${{ github.sha }}"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_NAME }}:${{ github.sha }}"
