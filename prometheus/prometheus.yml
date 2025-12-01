@@ -1,0 +1,37 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "api-gateway"
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["api-gateway:8080"]
+
+  - job_name: "hr-service"
+    static_configs:
+      - targets: ["hr-service:5005"]
+
+  - job_name: "inventory-service"
+    static_configs:
+      - targets: ["inventory-service:5020"]
+
+  - job_name: "finance-service"
+    static_configs:
+      - targets: ["finance-service:5003"]
+
+  - job_name: "reporting-service"
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["reporting-service:8085"]
+
+  - job_name: "user-management-service"
+    static_configs:
+      - targets: ["user-management-service:5078"]
+
+  - job_name: "authentication-service"
+    static_configs:
+      - targets: ["authentication-service:7280"]

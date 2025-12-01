@@ -44,8 +44,8 @@ export class LoginComponent {
       }))
       .subscribe({
         next: () => {
-          console.log('Login next handler called, navigating to /users');
-          this.router.navigate(['/users']);
+          console.log('Login successful, navigating to dashboard');
+          this.router.navigate(['/dashboard']);
         },
         error: (err) => {
           console.error('Login error handler called:', err);

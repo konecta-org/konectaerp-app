@@ -219,12 +219,11 @@ upstreams:
   reporting: "${REPORTING_SERVICE_URI:http://localhost:8085}"
 
 management:
-  server:
-    port: ${MANAGEMENT_PORT:8081}
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway
+        include: health,info,metrics,prometheus,gateway
+      base-path: /actuator
   endpoint:
     health:
       show-details: always
