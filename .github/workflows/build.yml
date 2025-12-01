@@ -78,7 +78,7 @@ jobs:
         id: env-tag
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "tag=${{ steps.bump_version.outputs.version }}" >> $GITHUB_OUTPUT
+            echo "tag=latest" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
             echo "tag=staging-latest" >> $GITHUB_OUTPUT
           else
