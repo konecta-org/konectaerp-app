@@ -61,7 +61,7 @@ jobs:
 
           - name: reporting-service
             context: backend/ReportingService
-            dockerfile: /backend/ReportingService/Dockerfile
+            dockerfile: ./backend/ReportingService/Dockerfile
 
     steps:
       - name: Checkout code
