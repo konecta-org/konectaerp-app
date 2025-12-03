@@ -37,7 +37,7 @@ jobs:
           sarif_file: codeql-results.sarif
 
       - name: Auto build
-        use: github/codeql-action/autobuild@v4
+        uses: github/codeql-action/autobuild@v4
 
       - name: Scan with CodeQL
         uses: github/codeql-action/analyze@v4
