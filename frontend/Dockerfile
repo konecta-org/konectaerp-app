@@ -1,11 +1,14 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# Define build argument for environment type
+ARG ENV_TYPE=production
+
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build -- --configuration production
+RUN npm run build -- --configuration ${ENV_TYPE}
 
 FROM nginx:1.27-alpine
 COPY --from=build /app/dist/konecta-erp-frontend/browser /usr/share/nginx/html

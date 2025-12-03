@@ -23,32 +23,24 @@ jobs:
       max-parallel: 2
       matrix:
         service:
-          - name: config-server
-            context: ./backend/config
-            dockerfile: ./backend/config/Dockerfile
-
-          - name: api-gateway
-            context: ./backend/ApiGateWay
-            dockerfile: ./backend/ApiGateWay/Dockerfile
-
           - name: authentication-service
-            context:
+            context: .
             dockerfile: ./backend/AuthenticationService/Dockerfile
 
           - name: hr-service
-            context:
+            context: .
             dockerfile: ./backend/HrService/Dockerfile
 
           - name: inventory-service
-            context:
+            context: .
             dockerfile: ./backend/InventoryService/Dockerfile
 
           - name: finance-service
-            context:
+            context: .
             dockerfile: ./backend/FinanceService/Dockerfile
 
           - name: user-management-service
-            context:
+            context: .
             dockerfile: ./backend/UserManagementService/Dockerfile
 
           - name: reporting-service

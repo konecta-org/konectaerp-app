@@ -4,19 +4,19 @@ on:
   pull_request:
     branches: [main, staging, dev]
     paths:
-      - "frontend/**"
-      - .github/workflows/build-frontend.yml
+      - "backend/config/**"
+      - .github/workflows/build-config-server.yml
   push:
     branches: [main, staging, dev]
     paths:
-      - "frontend/**"
-      - .github/workflows/build-frontend.yml
+      - "backend/config/**"
+      - .github/workflows/build-config-server.yml
 
 env:
   REGISTRY: us-central1-docker.pkg.dev
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REPOSITORY: konecta-erp
-  FRONTEND_NAME: frontend
+  CONFIG_SERVER_NAME: config-server
 
 permissions:
   security-events: write
@@ -57,15 +57,15 @@ jobs:
             echo "env=production" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push ${{ env.FRONTEND_NAME }}
+      - name: Build and push ${{ env.CONFIG_SERVER_NAME }}
         run: |
-          IMAGE_NAME="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_NAME }}"
+          IMAGE_NAME="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.CONFIG_SERVER_NAME }}"
           docker build \
             --build-arg ENV_TYPE=${{ steps.env-tag.outputs.env }} \
             -t ${IMAGE_NAME}:${{ github.sha }} \
             -t ${IMAGE_NAME}:${{ steps.env-tag.outputs.tag }} \
-            -f /frontend/Dockerfile \
-            /frontend
+            -f /backend/config/Dockerfile \
+            /backend/config
           docker push ${IMAGE_NAME}:${{ github.sha }}
           docker push ${IMAGE_NAME}:${{ steps.env-tag.outputs.tag }}
 
@@ -73,7 +73,7 @@ jobs:
         id: trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_NAME }}:${{ github.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.CONFIG_SERVER_NAME }}:${{ github.sha }}
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
@@ -88,4 +88,4 @@ jobs:
 
       - name: Output image digest
         run: |
-          echo "Image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_NAME }}:${{ github.sha }}"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.CONFIG_SERVER_NAME }}:${{ github.sha }}"

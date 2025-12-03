@@ -125,7 +125,7 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     environment:
-      PRODUCTION: "false"
+      ENV_TYPE: development
     depends_on:
       - api-gateway
     ports:
