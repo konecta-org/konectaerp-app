@@ -1,0 +1,45 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>Interviews</h2>
+      <p>Review scheduled interviews, statuses, and responsible interviewers.</p>
+    </div>
+    <button type="button" (click)="reload()" [disabled]="loading()">
+      {{ loading() ? 'Refreshing…' : 'Refresh' }}
+    </button>
+  </header>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <table *ngIf="interviews().length > 0; else emptyState">
+      <thead>
+        <tr>
+          <th>Scheduled</th>
+          <th>Interview Type</th>
+          <th>Status</th>
+          <th>Application</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let interview of interviews(); trackBy: trackByInterview">
+          <td>{{ interview.scheduledAt | date: 'medium' }}</td>
+          <td>{{ interview.interviewType || '—' }}</td>
+          <td>
+            <span class="status status--{{ interview.status | lowercase }}">{{ interview.status }}</span>
+          </td>
+          <td>{{ interview.jobApplicationTitle || interview.jobApplicationId }}</td>
+          <td>{{ interview.notes || '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading interviews…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="panel__status panel__status--muted">No interviews were returned.</div>
+  </ng-template>
+</section>

@@ -1,0 +1,54 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>Resignation Requests</h2>
+      <p>Monitor voluntary exits, pending reviews, and final decisions.</p>
+    </div>
+    <div class="panel__actions">
+      <label>
+        Status
+        <select [value]="statusFilter()" (change)="setStatusFilter($any($event.target).value)">
+          <option value="">All</option>
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </label>
+      <button type="button" (click)="reload()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+  </header>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <table *ngIf="resignations().length > 0; else emptyState">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Submitted</th>
+          <th>Last working day</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let resignation of resignations(); trackBy: trackById">
+          <td>{{ resignation.employeeName }}</td>
+          <td>{{ resignation.submittedAt | date: 'medium' }}</td>
+          <td>{{ resignation.lastWorkingDay | date: 'mediumDate' }}</td>
+          <td>
+            <span class="status status--{{ resignation.status | lowercase }}">{{ resignation.status }}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading resignation requests…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="panel__status panel__status--muted">No resignation requests were returned.</div>
+  </ng-template>
+</section>

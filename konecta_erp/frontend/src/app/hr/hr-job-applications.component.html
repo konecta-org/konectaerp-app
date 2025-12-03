@@ -1,0 +1,49 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>Job Applications</h2>
+      <p>Track candidate submissions, statuses, and engagement.</p>
+    </div>
+    <button type="button" (click)="reload()" [disabled]="loading()">
+      {{ loading() ? 'Refreshing…' : 'Refresh' }}
+    </button>
+  </header>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <table *ngIf="applications().length > 0; else emptyState">
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Email</th>
+          <th>Job Title</th>
+          <th>Status</th>
+          <th>Applied</th>
+          <th>Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let application of applications(); trackBy: trackByApplication">
+          <td>{{ application.candidateName }}</td>
+          <td>
+            <a [href]="'mailto:' + application.candidateEmail">{{ application.candidateEmail }}</a>
+          </td>
+          <td>{{ application.jobTitle || '—' }}</td>
+          <td>
+            <span class="status status--{{ application.status | lowercase }}">{{ application.status }}</span>
+          </td>
+          <td>{{ application.appliedAt | date: 'medium' }}</td>
+          <td>{{ application.updatedAt ? (application.updatedAt | date: 'medium') : '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading job applications…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="panel__status panel__status--muted">No job applications were returned.</div>
+  </ng-template>
+</section>

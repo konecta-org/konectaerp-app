@@ -1,34 +1,663 @@
-<section class="panel">
-  <header>
-    <div>
+<section class="employees">
+  <div class="employees__header">
+    <div class="employees__title">
       <h2>Employees</h2>
-      <p>Live view of HR records coming from the HR microservice.</p>
+      <p>Manage HR employee records, compensation, and lifecycle events.</p>
     </div>
-    <button type="button" (click)="refresh()" [disabled]="loading()">Refresh</button>
-  </header>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Department</th>
-        <th>Job title</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let employee of employees(); trackBy: trackByEmployee">
-        <td>{{ employee.fullName }}</td>
-        <td>{{ employee.email || '—' }}</td>
-        <td>{{ employee.department || '—' }}</td>
-        <td>{{ employee.jobTitle || '—' }}</td>
-        <td><span class="status">{{ employee.status || 'Active' }}</span></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="empty" *ngIf="!loading() && employees().length === 0">
-    No employees were returned by the HR service.
+    <div class="employees__actions">
+      <button
+        pButton
+        type="button"
+        label="Refresh"
+        icon="pi pi-refresh"
+        severity="secondary"
+        class="action-button"
+        [loading]="loading()"
+        (click)="refresh()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Add employee"
+        icon="pi pi-user-plus"
+        severity="primary"
+        class="action-button"
+        [ngClass]="actionLockClass(!canManageEmployees())"
+        [pTooltip]="tooltipFor('manage', !canManageEmployees())"
+        tooltipPosition="bottom"
+        (click)="openCreateEmployee()"
+      ></button>
+    </div>
   </div>
+
+  <p-message
+    *ngIf="feedback()"
+    severity="info"
+    [text]="feedback() ?? ''"
+    [closable]="true"
+    class="employees__message"
+    (onClose)="clearFeedback()"
+  ></p-message>
+
+  <p-message
+    *ngIf="error()"
+    severity="error"
+    [text]="error() ?? ''"
+    [closable]="false"
+    class="employees__message"
+  ></p-message>
+
+  <div class="employees__content">
+    <p-table
+      class="employees__table"
+      [value]="employees()"
+      dataKey="id"
+      [rowHover]="true"
+      [loading]="loading()"
+      responsiveLayout="scroll"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Name</th>
+          <th>Work email</th>
+          <th>Department</th>
+          <th>Position</th>
+          <th>Status</th>
+          <th class="column-actions">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-employee>
+        <tr
+          (click)="viewDetails(employee)"
+          [ngClass]="{ selected: selectedEmployee()?.id === employee.id }"
+        >
+          <td>
+            <div class="cell-main">
+              <span class="cell-main__title">{{ employee.fullName }}</span>
+              <small>{{ employee.createdAt | date: 'mediumDate' }}</small>
+            </div>
+          </td>
+          <td>
+            <a [href]="'mailto:' + employee.workEmail" (click)="$event.stopPropagation()">
+              {{ employee.workEmail }}
+            </a>
+          </td>
+          <td>{{ employee.departmentName || '—' }}</td>
+          <td>{{ employee.position || '—' }}</td>
+          <td>
+            <p-tag [value]="statusLabel(employee.status)" [severity]="statusSeverity(employee.status)"></p-tag>
+          </td>
+          <td class="table-actions" (click)="$event.stopPropagation()">
+            <div class="action-chip-group">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-eye"
+                label="View"
+                severity="secondary"
+                class="action-chip"
+                (click)="viewDetails(employee)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-pencil"
+                label="Edit"
+                severity="info"
+                class="action-chip"
+                [ngClass]="actionLockClass(!canManageEmployees())"
+                [pTooltip]="tooltipFor('manage', !canManageEmployees())"
+                tooltipPosition="bottom"
+                (click)="openEditEmployee(employee, $event)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-gift"
+                label="Bonus"
+                severity="success"
+                class="action-chip"
+                [ngClass]="actionLockClass(!canIssueBonuses())"
+                [pTooltip]="tooltipFor('bonus', !canIssueBonuses())"
+                tooltipPosition="bottom"
+                (click)="openBonusDialog(employee, $event)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-percentage"
+                label="Deduct"
+                severity="help"
+                class="action-chip"
+                [ngClass]="actionLockClass(!canIssueDeductions())"
+                [pTooltip]="tooltipFor('deduction', !canIssueDeductions())"
+                tooltipPosition="bottom"
+                (click)="openDeductionDialog(employee, $event)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-ban"
+                label="Terminate"
+                severity="danger"
+                class="action-chip"
+                [ngClass]="actionLockClass(!canFireEmployees())"
+                [pTooltip]="tooltipFor('fire', !canFireEmployees())"
+                tooltipPosition="bottom"
+                (click)="openFireDialog(employee, $event)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">No employees were returned.</div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <p-card class="employees__details" *ngIf="selectedEmployee() as employee">
+      <ng-template pTemplate="title">{{ employee.fullName }}</ng-template>
+      <ng-template pTemplate="subtitle">{{ employee.position || '—' }}</ng-template>
+
+      <ng-template pTemplate="content">
+        <div class="details-grid">
+          <div class="details-grid__item">
+            <span class="details-grid__label">Work email</span>
+            <a [href]="'mailto:' + employee.workEmail">{{ employee.workEmail }}</a>
+          </div>
+          <div class="details-grid__item">
+            <span class="details-grid__label">Personal email</span>
+            <a [href]="'mailto:' + employee.personalEmail">{{ employee.personalEmail }}</a>
+          </div>
+          <div class="details-grid__item">
+            <span class="details-grid__label">Department</span>
+            <span>{{ employee.departmentName || '—' }}</span>
+          </div>
+          <div class="details-grid__item">
+            <span class="details-grid__label">Hire date</span>
+            <span>{{ employee.hireDate | date: 'mediumDate' }}</span>
+          </div>
+          <div class="details-grid__item">
+            <span class="details-grid__label">Status</span>
+            <p-tag [value]="statusLabel(employee.status)" [severity]="statusSeverity(employee.status)"></p-tag>
+          </div>
+          <div class="details-grid__item">
+            <span class="details-grid__label">Salary</span>
+            <span>{{ employee.salary | currency }}</span>
+          </div>
+          <div class="details-grid__item" *ngIf="employee.phoneNumber">
+            <span class="details-grid__label">Phone</span>
+            <a [href]="'tel:' + employee.phoneNumber">{{ employee.phoneNumber }}</a>
+          </div>
+          <div class="details-grid__item">
+            <span class="details-grid__label">Created</span>
+            <span>{{ employee.createdAt | date: 'medium' }}</span>
+          </div>
+          <div class="details-grid__item" *ngIf="employee.updatedAt">
+            <span class="details-grid__label">Updated</span>
+            <span>{{ employee.updatedAt | date: 'medium' }}</span>
+          </div>
+          <div class="details-grid__item" *ngIf="employee.exitDate">
+            <span class="details-grid__label">Exit date</span>
+            <span>{{ employee.exitDate | date: 'mediumDate' }}</span>
+          </div>
+          <div class="details-grid__item" *ngIf="employee.exitReason">
+            <span class="details-grid__label">Exit reason</span>
+            <span>{{ employee.exitReason }}</span>
+          </div>
+          <div class="details-grid__item">
+            <span class="details-grid__label">Eligible for rehire</span>
+            <span>{{ employee.eligibleForRehire === null || employee.eligibleForRehire === undefined ? 'Not recorded' : (employee.eligibleForRehire ? 'Yes' : 'No') }}</span>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="footer">
+        <div class="details__actions">
+          <button
+            pButton
+            type="button"
+            label="Edit"
+            icon="pi pi-pencil"
+            severity="primary"
+            class="action-button"
+            [loading]="formSubmitting() && formMode() === 'edit'"
+            [ngClass]="actionLockClass(!canManageEmployees())"
+            [pTooltip]="tooltipFor('manage', !canManageEmployees())"
+            tooltipPosition="bottom"
+            (click)="openEditEmployee(employee)"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Issue bonus"
+            icon="pi pi-gift"
+            severity="success"
+            class="action-button"
+            [loading]="bonusSubmitting()"
+            [ngClass]="actionLockClass(!canIssueBonuses())"
+            [pTooltip]="tooltipFor('bonus', !canIssueBonuses())"
+            tooltipPosition="bottom"
+            (click)="openBonusDialog(employee)"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Issue deduction"
+            icon="pi pi-percentage"
+            severity="help"
+            class="action-button"
+            [loading]="deductionSubmitting()"
+            [ngClass]="actionLockClass(!canIssueDeductions())"
+            [pTooltip]="tooltipFor('deduction', !canIssueDeductions())"
+            tooltipPosition="bottom"
+            (click)="openDeductionDialog(employee)"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Terminate"
+            icon="pi pi-ban"
+            severity="danger"
+            class="action-button"
+            [loading]="fireSubmitting()"
+            [ngClass]="actionLockClass(!canFireEmployees())"
+            [pTooltip]="tooltipFor('fire', !canFireEmployees())"
+            tooltipPosition="bottom"
+            (click)="openFireDialog(employee)"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Close"
+            icon="pi pi-times"
+            severity="secondary"
+            class="action-button"
+            (click)="closeDetails()"
+          ></button>
+        </div>
+      </ng-template>
+    </p-card>
+  </div>
+
+  <p-dialog
+    header="{{ formMode() === 'create' ? 'Add employee' : 'Edit employee' }}"
+    [visible]="formVisible()"
+    [modal]="true"
+    [style]="{ width: '720px' }"
+    [breakpoints]="{ '960px': '95vw' }"
+    [closeOnEscape]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    (onHide)="closeEmployeeForm()"
+  >
+    <form
+      class="dialog-form p-fluid form-grid"
+      [formGroup]="employeeForm"
+      (ngSubmit)="submitEmployeeForm()"
+      autocomplete="off"
+    >
+      <div class="form-field">
+        <label for="fullName">Full name</label>
+        <input pInputText id="fullName" formControlName="fullName" />
+        <small *ngIf="employeeControlInvalid('fullName')">Name is required.</small>
+      </div>
+      <div class="form-field">
+        <label for="workEmail">Work email</label>
+        <input pInputText id="workEmail" type="email" formControlName="workEmail" />
+        <small *ngIf="employeeControlInvalid('workEmail')">Valid email required.</small>
+      </div>
+      <div class="form-field">
+        <label for="personalEmail">Personal email</label>
+        <input pInputText id="personalEmail" type="email" formControlName="personalEmail" />
+        <small *ngIf="employeeControlInvalid('personalEmail')">Valid email required.</small>
+      </div>
+      <div class="form-field">
+        <label for="position">Position</label>
+        <input pInputText id="position" formControlName="position" />
+        <small *ngIf="employeeControlInvalid('position')">Position is required.</small>
+      </div>
+      <div class="form-field">
+        <label for="phoneNumber">Phone number</label>
+        <input pInputText id="phoneNumber" formControlName="phoneNumber" />
+      </div>
+      <div class="form-field">
+        <label for="salary">Salary</label>
+        <p-inputNumber
+          inputId="salary"
+          formControlName="salary"
+          mode="currency"
+          currency="USD"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          [min]="0"
+        ></p-inputNumber>
+        <small *ngIf="employeeControlInvalid('salary')">Salary must be zero or higher.</small>
+      </div>
+      <div class="form-field">
+        <label for="hireDate">Hire date</label>
+        <p-calendar
+          inputId="hireDate"
+          formControlName="hireDate"
+          [showIcon]="true"
+          dateFormat="yy-mm-dd"
+        ></p-calendar>
+      </div>
+      <div class="form-field">
+        <label for="status">Status</label>
+        <p-dropdown
+          inputId="status"
+          formControlName="status"
+          [options]="employmentStatusOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select status"
+        ></p-dropdown>
+      </div>
+      <div class="form-field">
+        <label for="department">Department</label>
+        <p-dropdown
+          inputId="department"
+          formControlName="departmentId"
+          [options]="departmentOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select department"
+          [filter]="true"
+          [showClear]="true"
+          [loading]="departmentsLoading()"
+        ></p-dropdown>
+        <small *ngIf="employeeControlInvalid('departmentId')">Department is required.</small>
+      </div>
+      <div class="form-field">
+        <label for="userId">User Id</label>
+        <input pInputText id="userId" formControlName="userId" placeholder="Optional" />
+      </div>
+      <div class="form-field">
+        <label for="exitDate">Exit date</label>
+        <p-calendar
+          inputId="exitDate"
+          formControlName="exitDate"
+          [showIcon]="true"
+          dateFormat="yy-mm-dd"
+        ></p-calendar>
+      </div>
+      <div class="form-field form-field--full">
+        <label for="exitReason">Exit reason</label>
+        <textarea pInputTextarea id="exitReason" rows="2" formControlName="exitReason"></textarea>
+      </div>
+      <div class="form-field form-field--inline">
+        <p-checkbox inputId="eligibleForRehire" formControlName="eligibleForRehire" binary="true"></p-checkbox>
+        <label for="eligibleForRehire">Eligible for rehire</label>
+      </div>
+
+    </form>
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          severity="secondary"
+          class="action-button"
+          (click)="closeEmployeeForm()"
+          [disabled]="formSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          [label]="formMode() === 'create' ? 'Create employee' : 'Save changes'"
+          severity="primary"
+          class="action-button"
+          [loading]="formSubmitting()"
+          (click)="submitEmployeeForm()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    header="Terminate employment"
+    [visible]="fireDialogVisible()"
+    [modal]="true"
+    [style]="{ width: '420px' }"
+    [breakpoints]="{ '768px': '90vw' }"
+    [closeOnEscape]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    (onHide)="closeFireDialog()"
+  >
+    <form class="dialog-form p-fluid form-grid" [formGroup]="fireForm" (ngSubmit)="submitFire()" autocomplete="off">
+      <div class="form-field form-field--full">
+        <p class="dialog-helper">Provide a reason for terminating {{ selectedEmployee()?.fullName }}.</p>
+      </div>
+      <div class="form-field form-field--full">
+        <label for="fireReason">Reason</label>
+        <textarea pInputTextarea id="fireReason" rows="3" formControlName="reason" placeholder="Optional"></textarea>
+      </div>
+      <div class="form-field form-field--inline">
+        <p-checkbox inputId="fireEligible" formControlName="eligibleForRehire" binary="true"></p-checkbox>
+        <label for="fireEligible">Eligible for rehire</label>
+      </div>
+
+    </form>
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          severity="secondary"
+          class="action-button"
+          (click)="closeFireDialog()"
+          [disabled]="fireSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Confirm termination"
+          severity="danger"
+          class="action-button"
+          [loading]="fireSubmitting()"
+          (click)="submitFire()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    header="Issue bonus"
+    [visible]="bonusDialogVisible()"
+    [modal]="true"
+    [style]="{ width: '520px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [closeOnEscape]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    (onHide)="closeBonusDialog()"
+  >
+    <form class="dialog-form p-fluid form-grid" [formGroup]="bonusForm" (ngSubmit)="submitBonus()" autocomplete="off">
+      <div class="form-field">
+        <label for="bonusType">Bonus type</label>
+        <input pInputText id="bonusType" formControlName="bonusType" />
+        <small *ngIf="bonusControlInvalid('bonusType')">Type required.</small>
+      </div>
+      <div class="form-field">
+        <label for="bonusAmount">Amount</label>
+        <p-inputNumber
+          inputId="bonusAmount"
+          formControlName="amount"
+          mode="currency"
+          currency="USD"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          [min]="0.01"
+        ></p-inputNumber>
+        <small *ngIf="bonusControlInvalid('amount')">Amount must be greater than zero.</small>
+      </div>
+      <div class="form-field">
+        <label for="bonusAwardedOn">Awarded on</label>
+        <p-calendar
+          inputId="bonusAwardedOn"
+          formControlName="awardedOn"
+          [showIcon]="true"
+          dateFormat="yy-mm-dd"
+        ></p-calendar>
+      </div>
+      <div class="form-field">
+        <label for="bonusPeriod">Period</label>
+        <input pInputText id="bonusPeriod" formControlName="period" />
+      </div>
+      <div class="form-field">
+        <label for="bonusReference">Reference</label>
+        <input pInputText id="bonusReference" formControlName="reference" />
+      </div>
+      <div class="form-field">
+        <label for="bonusAwardedBy">Awarded by</label>
+        <input pInputText id="bonusAwardedBy" formControlName="awardedBy" />
+      </div>
+      <div class="form-field">
+        <label for="bonusIssuedBy">Issued by</label>
+        <input pInputText id="bonusIssuedBy" formControlName="issuedBy" />
+      </div>
+      <div class="form-field form-field--full">
+        <label for="bonusNotes">Notes</label>
+        <textarea pInputTextarea id="bonusNotes" rows="2" formControlName="notes"></textarea>
+      </div>
+      <div class="form-field">
+        <label for="bonusSource">Source system</label>
+        <input pInputText id="bonusSource" formControlName="sourceSystem" />
+      </div>
+
+    </form>
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          severity="secondary"
+          class="action-button"
+          (click)="closeBonusDialog()"
+          [disabled]="bonusSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Issue bonus"
+          severity="primary"
+          class="action-button"
+          [loading]="bonusSubmitting()"
+          (click)="submitBonus()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    header="Issue deduction"
+    [visible]="deductionDialogVisible()"
+    [modal]="true"
+    [style]="{ width: '520px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [closeOnEscape]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+    (onHide)="closeDeductionDialog()"
+  >
+    <form class="dialog-form p-fluid form-grid" [formGroup]="deductionForm" (ngSubmit)="submitDeduction()" autocomplete="off">
+      <div class="form-field">
+        <label for="deductionType">Deduction type</label>
+        <input pInputText id="deductionType" formControlName="deductionType" />
+        <small *ngIf="deductionControlInvalid('deductionType')">Type required.</small>
+      </div>
+      <div class="form-field">
+        <label for="deductionAmount">Amount</label>
+        <p-inputNumber
+          inputId="deductionAmount"
+          formControlName="amount"
+          mode="currency"
+          currency="USD"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          [min]="0.01"
+        ></p-inputNumber>
+        <small *ngIf="deductionControlInvalid('amount')">Amount must be greater than zero.</small>
+      </div>
+      <div class="form-field">
+        <label for="deductionAppliedOn">Applied on</label>
+        <p-calendar
+          inputId="deductionAppliedOn"
+          formControlName="appliedOn"
+          [showIcon]="true"
+          dateFormat="yy-mm-dd"
+        ></p-calendar>
+      </div>
+      <div class="form-field">
+        <label for="deductionPeriod">Period</label>
+        <input pInputText id="deductionPeriod" formControlName="period" />
+      </div>
+      <div class="form-field">
+        <label for="deductionReference">Reference</label>
+        <input pInputText id="deductionReference" formControlName="reference" />
+      </div>
+      <div class="form-field">
+        <label for="deductionAppliedBy">Applied by</label>
+        <input pInputText id="deductionAppliedBy" formControlName="appliedBy" />
+      </div>
+      <div class="form-field">
+        <label for="deductionIssuedBy">Issued by</label>
+        <input pInputText id="deductionIssuedBy" formControlName="issuedBy" />
+      </div>
+      <div class="form-field form-field--full">
+        <label for="deductionNotes">Notes</label>
+        <textarea pInputTextarea id="deductionNotes" rows="2" formControlName="notes"></textarea>
+      </div>
+      <div class="form-field">
+        <label for="deductionSource">Source system</label>
+        <input pInputText id="deductionSource" formControlName="sourceSystem" />
+      </div>
+      <div class="form-field form-field--inline">
+        <p-checkbox inputId="deductionRecurring" formControlName="isRecurring" binary="true"></p-checkbox>
+        <label for="deductionRecurring">Is recurring</label>
+      </div>
+
+    </form>
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          severity="secondary"
+          class="action-button"
+          (click)="closeDeductionDialog()"
+          [disabled]="deductionSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Issue deduction"
+          severity="primary"
+          class="action-button"
+          [loading]="deductionSubmitting()"
+          (click)="submitDeduction()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
 </section>

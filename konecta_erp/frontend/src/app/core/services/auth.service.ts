@@ -70,6 +70,46 @@ export class AuthService {
     return new Date(session.expiresAtUtc).getTime() > Date.now();
   });
 
+  defaultRoute(): string {
+    const session = this.sessionSignal();
+    if (!session) {
+      return '/landing';
+    }
+
+    const roleMatches = (...roles: string[]) =>
+      roles.some(role => this.hasRole(role));
+
+    if (roleMatches('SystemAdmin')) {
+      return '/users';
+    }
+
+    if (roleMatches('FinanceManager', 'FinanceStaff')) {
+      return '/finance';
+    }
+
+    if (roleMatches('HrAdmin', 'HrStaff')) {
+      return '/hr';
+    }
+
+    if (roleMatches('DepartmentManager')) {
+      return '/inventory';
+    }
+
+    if (roleMatches('ReportingManager', 'ReportingAnalyst', 'ReportingStaff')) {
+      return '/reporting';
+    }
+
+    if (roleMatches('Employee')) {
+      return '/landing';
+    }
+
+    if (session.permissions?.includes('user-management.users.read')) {
+      return '/users';
+    }
+
+    return '/landing';
+  }
+
   login(request: LoginRequest) {
     const url = `${environment.apiBaseUrl}${environment.endpoints.auth}/login`;
     return this.http.post<ApiResponse<LoginResult>>(url, request)
@@ -110,6 +150,20 @@ export class AuthService {
   hasPermission(permission: string): boolean {
     const session = this.sessionSignal();
     return !!session?.permissions?.includes(permission);
+  }
+
+  hasPermissionPrefix(prefix: string): boolean {
+    if (!prefix) {
+      return false;
+    }
+
+    const session = this.sessionSignal();
+    const normalizedPrefix = prefix.toLowerCase();
+
+    return !!session?.permissions?.some(permission => {
+      const normalizedPermission = permission.toLowerCase();
+      return normalizedPermission === normalizedPrefix || normalizedPermission.startsWith(`${normalizedPrefix}.`);
+    });
   }
 
   hasRole(role: string): boolean {

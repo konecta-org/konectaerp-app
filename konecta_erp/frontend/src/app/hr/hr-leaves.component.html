@@ -1,0 +1,53 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>Leave Requests</h2>
+      <p>Review employee leave submissions and their approval status.</p>
+    </div>
+    <div class="panel__actions">
+      <label class="pending-toggle">
+        <input type="checkbox" [checked]="pendingOnly()" (change)="togglePending()" />
+        Pending only
+      </label>
+      <button type="button" (click)="reload()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+  </header>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <table *ngIf="leaves().length > 0; else emptyState">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Type</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Status</th>
+          <th>Requested</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let leave of leaves(); trackBy: trackById">
+          <td>{{ leave.employeeName }}</td>
+          <td>{{ leave.leaveType }}</td>
+          <td>{{ leave.startDate | date: 'mediumDate' }}</td>
+          <td>{{ leave.endDate | date: 'mediumDate' }}</td>
+          <td>
+            <span class="status status--{{ leave.status | lowercase }}">{{ leave.status }}</span>
+          </td>
+          <td>{{ leave.createdAt | date: 'medium' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading leave requests…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="panel__status panel__status--muted">No leave requests were returned.</div>
+  </ng-template>
+</section>

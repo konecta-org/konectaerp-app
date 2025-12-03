@@ -1,0 +1,47 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>Attendance Records</h2>
+      <p>Monitor daily check-ins, check-outs, and attendance status.</p>
+    </div>
+    <button type="button" (click)="reload()" [disabled]="loading()">
+      {{ loading() ? 'Refreshing…' : 'Refresh' }}
+    </button>
+  </header>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <table *ngIf="records().length > 0; else emptyState">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Date</th>
+          <th>Check-in</th>
+          <th>Check-out</th>
+          <th>Status</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let record of records(); trackBy: trackById">
+          <td>{{ record.employeeName }}</td>
+          <td>{{ record.workDate | date: 'mediumDate' }}</td>
+          <td>{{ record.checkInTime ? (record.checkInTime | date: 'shortTime') : '—' }}</td>
+          <td>{{ record.checkOutTime ? (record.checkOutTime | date: 'shortTime') : '—' }}</td>
+          <td>
+            <span class="status status--{{ record.status | lowercase }}">{{ record.status }}</span>
+          </td>
+          <td>{{ record.notes || '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading attendance…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="panel__status panel__status--muted">No attendance records were returned.</div>
+  </ng-template>
+</section>

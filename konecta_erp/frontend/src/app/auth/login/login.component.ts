@@ -40,7 +40,7 @@ export class LoginComponent {
     this.auth.login(this.form.getRawValue())
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
-        next: () => this.router.navigate(['/users']),
+        next: () => this.router.navigate([this.auth.defaultRoute()]),
         error: () => {
           this.errorMessage = 'Unable to sign in. Please verify your credentials.';
         }

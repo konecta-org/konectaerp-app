@@ -1,0 +1,49 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>Departments</h2>
+      <p>Explore org units, their managers, and active headcount.</p>
+    </div>
+    <button type="button" (click)="reload()" [disabled]="loading()">
+      {{ loading() ? 'Refreshing…' : 'Refresh' }}
+    </button>
+  </header>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <div class="grid" *ngIf="departments().length > 0; else emptyState">
+      <article class="card" *ngFor="let department of departments(); trackBy: trackByDepartment">
+        <header class="card__header">
+          <h3>{{ department.departmentName }}</h3>
+          <span class="badge">{{ department.employeeCount }} employees</span>
+        </header>
+        <p class="card__manager" *ngIf="department.managerFullName; else noManager">
+          <strong>Manager:</strong> {{ department.managerFullName }}
+        </p>
+        <ng-template #noManager>
+          <p class="card__manager card__manager--empty">No manager assigned</p>
+        </ng-template>
+        <p class="card__description" *ngIf="department.description">{{ department.description }}</p>
+
+        <section class="card__employees" *ngIf="department.employees?.length">
+          <h4>Team members</h4>
+          <ul>
+            <li *ngFor="let member of department.employees">
+              <span class="member-name">{{ member.fullName }}</span>
+              <small class="member-role">{{ member.jobTitle || '—' }}</small>
+              <span class="member-status member-status--{{ member.status | lowercase }}">{{ member.status || 'Active' }}</span>
+            </li>
+          </ul>
+        </section>
+      </article>
+    </div>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading departments…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="panel__status panel__status--muted">No departments were returned.</div>
+  </ng-template>
+</section>

@@ -1,0 +1,58 @@
+<section class="hr-workspace">
+  <header class="hr-header">
+    <div>
+      <h1>Human Resources</h1>
+      <p>Access workforce operations, talent management, and HR analytics.</p>
+    </div>
+    <div class="hr-metrics" *ngIf="summary() as info; else summaryFallback">
+      <div class="metric">
+        <span>{{ info.totalEmployees }}</span>
+        <small>Total employees</small>
+      </div>
+      <div class="metric">
+        <span>{{ info.activeEmployees }}</span>
+        <small>Active employees</small>
+      </div>
+      <div class="metric">
+        <span>{{ info.departments }}</span>
+        <small>Departments</small>
+      </div>
+      <div class="metric metric--alert">
+        <span>{{ info.pendingResignations }}</span>
+        <small>Pending resignations</small>
+      </div>
+    </div>
+    <ng-template #summaryFallback>
+      <div class="hr-summary-placeholder" *ngIf="loading(); else summaryError">
+        Loading overview…
+      </div>
+      <ng-template #summaryError>
+        <div class="hr-summary-placeholder" *ngIf="loadError()">
+          {{ loadError() }}
+        </div>
+      </ng-template>
+    </ng-template>
+  </header>
+
+  <section class="hr-grid">
+    <article
+      *ngFor="let tile of tiles"
+      class="hr-tile"
+      [class.hr-tile--locked]="isLocked(tile)"
+      (click)="navigate(tile)"
+      (keyup.enter)="navigate(tile)"
+      role="button"
+      tabindex="0"
+      [attr.aria-disabled]="isLocked(tile)"
+    >
+      <div class="hr-tile__icon" [style.backgroundImage]="tile.accent">
+        <span>{{ tile.icon }}</span>
+      </div>
+      <div class="hr-tile__content">
+        <h2>{{ tile.title }}</h2>
+        <p>{{ tile.description }}</p>
+      </div>
+      <span class="hr-tile__badge" *ngIf="isLocked(tile)">No access</span>
+    </article>
+  </section>
+</section>

@@ -1,0 +1,52 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>Job Openings</h2>
+      <p>Monitor recruiting pipeline, openings, and application volume.</p>
+    </div>
+    <button type="button" (click)="reload()" [disabled]="loading()">
+      {{ loading() ? 'Refreshing…' : 'Refresh' }}
+    </button>
+  </header>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <div class="grid" *ngIf="openings().length > 0; else emptyState">
+      <article class="card" *ngFor="let opening of openings(); trackBy: trackByOpening">
+        <header class="card__header">
+          <h3>{{ opening.title }}</h3>
+          <span class="status status--{{ opening.status | lowercase }}">{{ opening.status }}</span>
+        </header>
+        <div class="card__meta">
+          <span><strong>Department:</strong> {{ opening.departmentName || '—' }}</span>
+          <span><strong>Location:</strong> {{ opening.location || 'Flexible' }}</span>
+          <span><strong>Employment:</strong> {{ opening.employmentType || 'Not specified' }}</span>
+        </div>
+        <p class="card__description" *ngIf="opening.description">{{ opening.description }}</p>
+
+        <ul class="card__stats">
+          <li>
+            <span class="label">Posted</span>
+            <span class="value">{{ opening.postedDate || opening.createdAt | date: 'mediumDate' }}</span>
+          </li>
+          <li>
+            <span class="label">Closing</span>
+            <span class="value">{{ opening.closingDate ? (opening.closingDate | date: 'mediumDate') : '—' }}</span>
+          </li>
+          <li>
+            <span class="label">Applications</span>
+            <span class="value">{{ opening.applicationCount ?? 0 }}</span>
+          </li>
+        </ul>
+      </article>
+    </div>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading job openings…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="panel__status panel__status--muted">No job openings were returned.</div>
+  </ng-template>
+</section>
