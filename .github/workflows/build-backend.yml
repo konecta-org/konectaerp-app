@@ -60,7 +60,7 @@ jobs:
             dockerfile: ./backend/UserManagementService/Dockerfile
 
           - name: reporting-service
-            context: ./backend/ReportingService
+            context: backend/ReportingService
             dockerfile: /backend/ReportingService/Dockerfile
 
     steps:
