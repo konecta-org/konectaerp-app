@@ -20,7 +20,6 @@ env:
 
 permissions:
   security-events: write
-  contents: read
   id-token: write
   contents: write
 
