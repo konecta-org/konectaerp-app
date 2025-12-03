@@ -1,10 +1,26 @@
-name: Build and Push Docker Images
+name: Build and Push backend services
 
 on:
   pull_request:
-    branches: [main, staging, develop]
+    branches: [main, staging, dev]
+    paths:
+      - "backend/AuthenticationService/**"
+      - "backend/HrService/**"
+      - "backend/InventoryService/**"
+      - "backend/FinanceService/**"
+      - "backend/UserManagementService/**"
+      - "backend/ReportingService/**"
+      - .github/workflows/build-backend.yml
   push:
-    branches: [main, staging, develop]
+    branches: [main, staging, dev]
+    paths:
+      - "backend/AuthenticationService/**"
+      - "backend/HrService/**"
+      - "backend/InventoryService/**"
+      - "backend/FinanceService/**"
+      - "backend/UserManagementService/**"
+      - "backend/ReportingService/**"
+      - .github/workflows/build-backend.yml
 
 env:
   REGISTRY: us-central1-docker.pkg.dev
@@ -44,7 +60,7 @@ jobs:
             dockerfile: ./backend/UserManagementService/Dockerfile
 
           - name: reporting-service
-            context: /backend/ReportingService
+            context: ./backend/ReportingService
             dockerfile: /backend/ReportingService/Dockerfile
 
     steps:

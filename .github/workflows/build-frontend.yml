@@ -1,4 +1,4 @@
-name: Build and Push Docker Images
+name: Build and Push frontend Docker Image
 
 on:
   pull_request:
@@ -64,8 +64,8 @@ jobs:
             --build-arg ENV_TYPE=${{ steps.env-tag.outputs.env }} \
             -t ${IMAGE_NAME}:${{ github.sha }} \
             -t ${IMAGE_NAME}:${{ steps.env-tag.outputs.tag }} \
-            -f /frontend/Dockerfile \
-            /frontend
+            -f ./frontend/Dockerfile \
+            ./frontend
           docker push ${IMAGE_NAME}:${{ github.sha }}
           docker push ${IMAGE_NAME}:${{ steps.env-tag.outputs.tag }}
 
