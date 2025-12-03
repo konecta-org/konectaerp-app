@@ -22,6 +22,7 @@ permissions:
   security-events: write
   contents: read
   id-token: write
+  contents: write
 
 jobs:
   build:
@@ -29,6 +30,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Bump version on main
+        id: bump
+        if: github.ref == 'refs/heads/main'
+        uses: anothrNick/github-tag-action@v1
+        env:
+          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BUMP: minor
+          TAG_PREFIX: "v"
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
@@ -62,7 +72,7 @@ jobs:
         id: env-tag
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "tag=${{ steps.bump.outputs.tag }}" >> $GITHUB_OUTPUT
             echo "env=production" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
             echo "tag=staging-latest" >> $GITHUB_OUTPUT
