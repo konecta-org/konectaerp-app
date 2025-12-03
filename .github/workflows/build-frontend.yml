@@ -35,7 +35,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: anothrNick/github-tag-action@v1
         env:
-          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BUMP: minor
           TAG_PREFIX: "v"
 
