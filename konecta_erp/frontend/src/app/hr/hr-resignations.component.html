@@ -1,54 +1,492 @@
-<section class="panel">
-  <header class="panel__header">
-    <div>
+<div class="hr-resignations">
+  <header class="hr-resignations__header">
+    <div class="hr-resignations__title">
       <h2>Resignation Requests</h2>
       <p>Monitor voluntary exits, pending reviews, and final decisions.</p>
     </div>
-    <div class="panel__actions">
-      <label>
-        Status
-        <select [value]="statusFilter()" (change)="setStatusFilter($any($event.target).value)">
-          <option value="">All</option>
-          <option value="Pending">Pending</option>
-          <option value="Approved">Approved</option>
-          <option value="Rejected">Rejected</option>
-        </select>
-      </label>
-      <button type="button" (click)="reload()" [disabled]="loading()">
-        {{ loading() ? 'Refreshing…' : 'Refresh' }}
-      </button>
+    <div class="hr-resignations__actions">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-user-minus"
+        label="Submit resignation"
+        class="action-button"
+        severity="primary"
+        (click)="openCreateDialog()"
+        [disabled]="!canSubmitResignation()"
+        [ngClass]="actionLockClass(!canSubmitResignation())"
+        [loading]="currentEmployeeLoading()"
+        [pTooltip]="canSubmitResignation() ? undefined : currentEmployeeError() ?? 'Employee profile unavailable'"
+        tooltipPosition="bottom"
+      ></button>
+      <div class="hr-resignations__filter">
+        <label for="statusFilter">Filter by status</label>
+        <p-select
+          inputId="statusFilter"
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="statusFilter()"
+          (onChange)="setStatusFilter($event.value)"
+          dropdownIcon="pi pi-chevron-down"
+          placeholder="All statuses"
+          appendTo="body"
+        ></p-select>
+      </div>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-refresh"
+        label="Refresh"
+        class="action-button"
+        severity="secondary"
+        (click)="reload()"
+        [loading]="loading()"
+      ></button>
     </div>
   </header>
 
-  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
-    <table *ngIf="resignations().length > 0; else emptyState">
-      <thead>
-        <tr>
-          <th>Employee</th>
-          <th>Submitted</th>
-          <th>Last working day</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let resignation of resignations(); trackBy: trackById">
-          <td>{{ resignation.employeeName }}</td>
-          <td>{{ resignation.submittedAt | date: 'medium' }}</td>
-          <td>{{ resignation.lastWorkingDay | date: 'mediumDate' }}</td>
-          <td>
-            <span class="status status--{{ resignation.status | lowercase }}">{{ resignation.status }}</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <p-message
+    *ngIf="feedback(); else errorBlock"
+    severity="success"
+    [text]="feedback()!"
+    class="hr-resignations__message"
+    (onClose)="clearFeedback()"
+    [closable]="true"
+  ></p-message>
+
+  <ng-template #errorBlock>
+    <p-message *ngIf="error()" severity="error" [text]="error()!" class="hr-resignations__message"></p-message>
+  </ng-template>
+
+  <ng-container *ngIf="!loading(); else loadingState">
+    <ng-container *ngIf="!error(); else errorState">
+      <p-message
+        *ngIf="currentEmployeeError()"
+        severity="warn"
+        [text]="currentEmployeeError()!"
+        class="hr-resignations__message"
+      ></p-message>
+      <p-message
+        *ngIf="!currentEmployeeError() && currentEmployeeName()"
+        severity="info"
+        [text]="'Submitting as ' + currentEmployeeName()"
+        class="hr-resignations__message"
+      ></p-message>
+      <ng-container *ngIf="hasResignations(); else emptyState">
+        <div class="hr-resignations__layout">
+          <div class="hr-resignations__table">
+            <p-table
+              [value]="resignations()"
+              dataKey="id"
+              [rowHover]="true"
+              class="resignations-table"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Employee</th>
+                  <th>Requested</th>
+                  <th>Effective</th>
+                  <th>Status</th>
+                  <th>Rehire</th>
+                  <th class="actions-column">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-resignation>
+                <tr
+                  (click)="viewResignation(resignation)"
+                  [class.is-selected]="selectedResignation()?.id === resignation.id"
+                >
+                  <td>
+                    <div class="cell-main">
+                      <span class="cell-main__title">{{ resignation.employeeName }}</span>
+                      <small *ngIf="resignation.employeeEmail">
+                        <a [href]="'mailto:' + resignation.employeeEmail" (click)="$event.stopPropagation()">
+                          {{ resignation.employeeEmail }}
+                        </a>
+                      </small>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="cell-date">
+                      <span>{{ resignation.requestedAt | date: 'mediumDate' }}</span>
+                      <small>{{ resignation.requestedAt | date: 'shortTime' }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="cell-date">
+                      <span>{{ resignation.effectiveDate | date: 'mediumDate' }}</span>
+                      <small>{{ resignation.effectiveDate | date: 'shortTime' }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <p-tag
+                      [value]="statusLabel(resignation.status)"
+                      [severity]="statusSeverity(resignation.status)"
+                    ></p-tag>
+                  </td>
+                  <td>
+                    <p-tag
+                      [value]="rehireLabel(resignation.eligibleForRehire)"
+                      [severity]="rehireSeverity(resignation.eligibleForRehire)"
+                    ></p-tag>
+                  </td>
+                  <td class="actions-column">
+                    <div class="action-chip-group">
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-eye"
+                        label="View"
+                        iconPos="left"
+                        class="action-chip"
+                        severity="secondary"
+                        pTooltip="View details"
+                        tooltipPosition="bottom"
+                        (click)="viewResignation(resignation); $event.stopPropagation()"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-pencil"
+                        label="Edit"
+                        iconPos="left"
+                        class="action-chip"
+                        severity="help"
+                        [disabled]="!isPending(resignation) || !canManageResignations()"
+                        [ngClass]="actionLockClass(!isPending(resignation) || !canManageResignations())"
+                        [pTooltip]="editTooltip(resignation)"
+                        tooltipPosition="bottom"
+                        (click)="openEditDialog(resignation, $event)"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-check"
+                        label="Approve"
+                        iconPos="left"
+                        class="action-chip"
+                        severity="success"
+                        [disabled]="!isPending(resignation) || !canManageResignations()"
+                        [ngClass]="actionLockClass(!isPending(resignation) || !canManageResignations())"
+                        [pTooltip]="decisionTooltip(resignation, 'approve')"
+                        tooltipPosition="bottom"
+                        (click)="openDecisionDialog('approve', $event, resignation)"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-times"
+                        label="Reject"
+                        iconPos="left"
+                        class="action-chip"
+                        severity="danger"
+                        [disabled]="!isPending(resignation) || !canManageResignations()"
+                        [ngClass]="actionLockClass(!isPending(resignation) || !canManageResignations())"
+                        [pTooltip]="decisionTooltip(resignation, 'reject')"
+                        tooltipPosition="bottom"
+                        (click)="openDecisionDialog('reject', $event, resignation)"
+                      ></button>
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6">
+                    <div class="hr-resignations__state">No resignation requests were returned.</div>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <p-card
+            class="hr-resignations__details"
+            *ngIf="detailVisible() && selectedResignation() as resignation"
+          >
+            <ng-template pTemplate="content">
+              <div class="resignation-details">
+                <header class="resignation-details__header">
+                  <div class="resignation-details__identity">
+                    <h3>{{ resignation.employeeName }}</h3>
+                    <p *ngIf="resignation.employeeEmail">
+                      <a [href]="'mailto:' + resignation.employeeEmail">{{ resignation.employeeEmail }}</a>
+                    </p>
+                  </div>
+                  <div class="resignation-details__actions">
+                    <p-tag
+                      [value]="statusLabel(resignation.status)"
+                      [severity]="statusSeverity(resignation.status)"
+                    ></p-tag>
+                    <div class="resignation-details__action-buttons">
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-check"
+                        label="Approve"
+                        iconPos="left"
+                        class="action-chip"
+                        severity="success"
+                        [disabled]="!isPending(resignation) || !canManageResignations()"
+                        [ngClass]="actionLockClass(!isPending(resignation) || !canManageResignations())"
+                        [pTooltip]="decisionTooltip(resignation, 'approve')"
+                        tooltipPosition="bottom"
+                        (click)="openDecisionDialog('approve', undefined, resignation)"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-pencil"
+                        label="Edit"
+                        iconPos="left"
+                        class="action-chip"
+                        severity="help"
+                        [disabled]="!isPending(resignation) || !canManageResignations()"
+                        [ngClass]="actionLockClass(!isPending(resignation) || !canManageResignations())"
+                        [pTooltip]="editTooltip(resignation)"
+                        tooltipPosition="bottom"
+                        (click)="openEditDialog(resignation)"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-times"
+                        label="Reject"
+                        iconPos="left"
+                        class="action-chip"
+                        severity="danger"
+                        [disabled]="!isPending(resignation) || !canManageResignations()"
+                        [ngClass]="actionLockClass(!isPending(resignation) || !canManageResignations())"
+                        [pTooltip]="decisionTooltip(resignation, 'reject')"
+                        tooltipPosition="bottom"
+                        (click)="openDecisionDialog('reject', undefined, resignation)"
+                      ></button>
+                    </div>
+                  </div>
+                </header>
+
+                <section class="resignation-details__section">
+                  <h4>Timeline</h4>
+                  <div class="resignation-details__grid">
+                    <div class="resignation-details__item">
+                      <span class="label">Requested on</span>
+                      <span class="value">{{ resignation.requestedAt | date: 'medium' }}</span>
+                    </div>
+                    <div class="resignation-details__item">
+                      <span class="label">Last working day</span>
+                      <span class="value">{{ resignation.effectiveDate | date: 'medium' }}</span>
+                    </div>
+                    <div class="resignation-details__item" *ngIf="resignation.decidedAt">
+                      <span class="label">Decision recorded</span>
+                      <span class="value">{{ resignation.decidedAt | date: 'medium' }}</span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="resignation-details__section">
+                  <h4>Summary</h4>
+                  <div class="resignation-details__grid resignation-details__grid--compact">
+                    <div class="resignation-details__item">
+                      <span class="label">Status</span>
+                      <span class="value">{{ statusLabel(resignation.status) }}</span>
+                    </div>
+                    <div class="resignation-details__item">
+                      <span class="label">Rehire eligibility</span>
+                      <span class="value">{{ rehireLabel(resignation.eligibleForRehire) }}</span>
+                    </div>
+                    <div class="resignation-details__item" *ngIf="resignation.approvedByName">
+                      <span class="label">Processed by</span>
+                      <span class="value">{{ resignation.approvedByName }}</span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="resignation-details__section" *ngIf="resignation.reason">
+                  <h4>Employee note</h4>
+                  <p class="resignation-details__text">{{ resignation.reason }}</p>
+                </section>
+
+                <section class="resignation-details__section" *ngIf="resignation.decisionNotes">
+                  <h4>Decision notes</h4>
+                  <p class="resignation-details__text">{{ resignation.decisionNotes }}</p>
+                </section>
+              </div>
+            </ng-template>
+          </p-card>
+        </div>
+      </ng-container>
+    </ng-container>
   </ng-container>
 
-  <ng-template #stateTemplate>
-    <div class="panel__status" *ngIf="loading()">Loading resignation requests…</div>
-    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  <ng-template #loadingState>
+    <div class="hr-resignations__state">Loading resignation requests…</div>
+  </ng-template>
+
+  <ng-template #errorState>
+    <div class="hr-resignations__state hr-resignations__state--error">{{ error() }}</div>
   </ng-template>
 
   <ng-template #emptyState>
-    <div class="panel__status panel__status--muted">No resignation requests were returned.</div>
+    <div class="hr-resignations__empty">
+      <h3>No resignation requests yet</h3>
+      <p>Employees have not submitted any resignations for this period.</p>
+    </div>
   </ng-template>
-</section>
+
+  <p-dialog
+    [visible]="formVisible()"
+    [modal]="true"
+    [style]="{ width: '520px' }"
+    [draggable]="false"
+    [closable]="!formSubmitting()"
+    (onHide)="closeFormDialog()"
+    [dismissableMask]="false"
+    class="resignation-dialog"
+    [header]="formMode() === 'create' ? 'Submit resignation request' : 'Edit resignation request'"
+  >
+    <form
+      id="resignationForm"
+      [formGroup]="resignationForm"
+      class="resignation-form"
+      (ngSubmit)="submitResignationForm()"
+    >
+      <p-message
+        *ngIf="currentEmployeeError() && formMode() === 'create'"
+        severity="warn"
+        [text]="currentEmployeeError()!"
+        class="resignation-form__message"
+      ></p-message>
+      <p-message
+        *ngIf="!currentEmployeeError() && currentEmployeeName() && formMode() === 'create'"
+        severity="info"
+        [text]="'Submitting on behalf of ' + currentEmployeeName()"
+        class="resignation-form__message"
+      ></p-message>
+
+      <div class="resignation-form__field">
+        <label for="resignationEffectiveDate">Last working day</label>
+        <p-datePicker
+          inputId="resignationEffectiveDate"
+          formControlName="effectiveDate"
+          [showIcon]="true"
+          [minDate]="today"
+          dateFormat="yy-mm-dd"
+          appendTo="body"
+        ></p-datePicker>
+        <div class="form-error" *ngIf="formControlInvalid('effectiveDate')">Effective date is required.</div>
+      </div>
+
+      <div class="resignation-form__field">
+        <label for="resignationReason">Reason</label>
+        <textarea
+          id="resignationReason"
+          pTextarea
+          formControlName="reason"
+          rows="4"
+          maxlength="2000"
+          placeholder="Provide context for the resignation (optional)"
+          autoResize
+        ></textarea>
+        <small class="field-hint">Optional · Maximum 2,000 characters.</small>
+      </div>
+    </form>
+    <ng-template pTemplate="footer">
+      <div class="resignation-form__footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          class="action-button"
+          severity="secondary"
+          (click)="closeFormDialog()"
+          [disabled]="formSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="submit"
+          [label]="formMode() === 'create' ? 'Submit request' : 'Save changes'"
+          severity="primary"
+          [loading]="formSubmitting()"
+          form="resignationForm"
+          class="action-button"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    [visible]="decisionVisible()"
+    [modal]="true"
+    [style]="{ width: '520px' }"
+    [draggable]="false"
+    [closable]="!decisionSubmitting()"
+    (onHide)="closeDecisionDialog()"
+    [dismissableMask]="false"
+    class="decision-dialog"
+    [contentStyle]="{ overflow: 'visible' }"
+    [header]="decisionMode() === 'approve' ? 'Approve resignation' : 'Reject resignation'"
+  >
+    <form
+      id="decisionForm"
+      [formGroup]="decisionForm"
+      class="decision-form"
+      (ngSubmit)="submitDecision()"
+    >
+      <p class="decision-form__description">
+        {{
+          decisionMode() === 'approve'
+            ? 'Confirm the resignation and optionally mark whether the employee is eligible for rehire.'
+            : 'Provide additional context for rejecting the resignation request.'
+        }}
+      </p>
+
+      <div class="decision-form__field">
+        <label for="decisionNotes">Decision notes</label>
+        <textarea
+          id="decisionNotes"
+          pTextarea
+          formControlName="decisionNotes"
+          rows="4"
+          maxlength="2000"
+          placeholder="Add context for this decision (optional)"
+          autoResize
+        ></textarea>
+        <div class="form-error" *ngIf="controlInvalid('decisionNotes')">
+          Decision notes cannot exceed 2,000 characters.
+        </div>
+      </div>
+
+      <div class="decision-form__field" *ngIf="decisionMode() === 'approve'">
+        <div class="decision-form__switch">
+          <label for="rehireEligible">Eligible for rehire</label>
+          <p-inputSwitch id="rehireEligible" formControlName="eligibleForRehire"></p-inputSwitch>
+        </div>
+        <small>Enable if the employee can return to the organization in the future.</small>
+      </div>
+
+    </form>
+    <ng-template pTemplate="footer">
+      <div class="decision-form__footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          class="action-button"
+          severity="secondary"
+          (click)="closeDecisionDialog()"
+          [disabled]="decisionSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="submit"
+          [label]="decisionMode() === 'approve' ? 'Approve request' : 'Reject request'"
+          [severity]="decisionMode() === 'approve' ? 'success' : 'danger'"
+          [loading]="decisionSubmitting()"
+          class="action-button"
+          form="decisionForm"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</div>

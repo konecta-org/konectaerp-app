@@ -1,49 +1,523 @@
-<section class="panel">
-  <header class="panel__header">
-    <div>
+<div class="hr-applications">
+  <header class="hr-applications__header">
+    <div class="hr-applications__title">
       <h2>Job Applications</h2>
-      <p>Track candidate submissions, statuses, and engagement.</p>
+      <p>Review candidates, manage statuses, and guide them through interviews.</p>
     </div>
-    <button type="button" (click)="reload()" [disabled]="loading()">
-      {{ loading() ? 'Refreshing…' : 'Refresh' }}
-    </button>
+    <div class="hr-applications__actions">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-user-plus"
+        label="New application"
+        class="action-button"
+        severity="primary"
+        (click)="openCreateDialog()"
+        [disabled]="!canManageApplications()"
+        [ngClass]="actionLockClass(!canManageApplications())"
+        [pTooltip]="tooltipFor('manage', !canManageApplications())"
+        tooltipPosition="bottom"
+      ></button>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-refresh"
+        label="Refresh"
+        class="action-button"
+        severity="secondary"
+        (click)="reload()"
+        [loading]="loading()"
+      ></button>
+    </div>
   </header>
 
-  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
-    <table *ngIf="applications().length > 0; else emptyState">
-      <thead>
-        <tr>
-          <th>Candidate</th>
-          <th>Email</th>
-          <th>Job Title</th>
-          <th>Status</th>
-          <th>Applied</th>
-          <th>Updated</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let application of applications(); trackBy: trackByApplication">
-          <td>{{ application.candidateName }}</td>
-          <td>
-            <a [href]="'mailto:' + application.candidateEmail">{{ application.candidateEmail }}</a>
-          </td>
-          <td>{{ application.jobTitle || '—' }}</td>
-          <td>
-            <span class="status status--{{ application.status | lowercase }}">{{ application.status }}</span>
-          </td>
-          <td>{{ application.appliedAt | date: 'medium' }}</td>
-          <td>{{ application.updatedAt ? (application.updatedAt | date: 'medium') : '—' }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <p-message
+    *ngIf="feedback(); else errorBlock"
+    severity="success"
+    [text]="feedback()!"
+    class="hr-applications__message"
+    (onClose)="clearFeedback()"
+    [closable]="true"
+  ></p-message>
+
+  <ng-template #errorBlock>
+    <p-message *ngIf="error()" severity="error" [text]="error()!" class="hr-applications__message"></p-message>
+  </ng-template>
+
+  <ng-container *ngIf="!loading(); else loadingState">
+    <ng-container *ngIf="!error(); else errorState">
+      <ng-container *ngIf="hasApplications(); else emptyState">
+        <div class="hr-applications__layout">
+          <div class="hr-applications__table">
+            <p-table
+              [value]="applications()"
+              [rowHover]="true"
+              dataKey="id"
+              [loading]="loading()"
+              class="applications-table"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Candidate</th>
+                  <th>Job Opening</th>
+                  <th>Status</th>
+                  <th>Applied</th>
+                  <th>Updated</th>
+                  <th class="actions-column">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-application>
+                <tr
+                  (click)="viewApplication(application)"
+                  [class.is-selected]="selectedApplication()?.id === application.id"
+                >
+                  <td>
+                    <div class="cell-main">
+                      <span class="cell-main__title">{{ application.candidateName }}</span>
+                      <small>
+                        <a [href]="'mailto:' + application.candidateEmail" (click)="$event.stopPropagation()">
+                          {{ application.candidateEmail }}
+                        </a>
+                      </small>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="cell-main">
+                      <span class="cell-main__title">{{ jobOpeningLabel(application) }}</span>
+                      <small *ngIf="jobOpeningDepartment(application)">
+                        {{ jobOpeningDepartment(application) }}
+                      </small>
+                    </div>
+                  </td>
+                  <td>
+                    <p-tag
+                      [value]="applicationStatusLabel(application.status)"
+                      [severity]="applicationStatusSeverity(application.status)"
+                    ></p-tag>
+                  </td>
+                  <td>
+                    <div class="cell-date">
+                      <span>{{ application.appliedAt | date: 'mediumDate' }}</span>
+                      <small>{{ application.appliedAt | date: 'shortTime' }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="cell-date">
+                      <span>
+                        {{ application.updatedAt ? (application.updatedAt | date: 'mediumDate') : '—' }}
+                      </span>
+                      <small *ngIf="application.updatedAt">
+                        {{ application.updatedAt | date: 'shortTime' }}
+                      </small>
+                    </div>
+                  </td>
+                  <td class="actions-column">
+                    <div class="action-chip-group">
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-eye"
+                        class="action-chip"
+                        severity="secondary"
+                        pTooltip="View details"
+                        tooltipPosition="bottom"
+                        (click)="viewApplication(application); $event.stopPropagation()"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-pencil"
+                        class="action-chip"
+                        severity="primary"
+                        [ngClass]="actionLockClass(!canManageApplications())"
+                        [pTooltip]="tooltipFor('manage', !canManageApplications())"
+                        tooltipPosition="bottom"
+                        (click)="openEditDialog(application, $event)"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-trash"
+                        class="action-chip"
+                        severity="danger"
+                        [ngClass]="actionLockClass(!canDeleteApplications())"
+                        [pTooltip]="tooltipFor('delete', !canDeleteApplications())"
+                        tooltipPosition="bottom"
+                        (click)="openDeleteDialog(application, $event)"
+                      ></button>
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6">
+                    <div class="hr-applications__state">No job applications were returned.</div>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <p-card
+            class="hr-applications__details"
+            *ngIf="detailVisible() && selectedApplication() as application"
+          >
+            <ng-template pTemplate="content">
+              <div class="application-details">
+                <header class="application-details__header">
+                  <div class="application-details__identity">
+                    <h3>{{ application.candidateName }}</h3>
+                    <p>{{ jobOpeningLabel(application) }}</p>
+                  </div>
+                  <div class="application-details__actions">
+                    <p-tag
+                      [value]="applicationStatusLabel(application.status)"
+                      [severity]="applicationStatusSeverity(application.status)"
+                    ></p-tag>
+                    <div class="application-details__action-buttons">
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-pencil"
+                        class="action-chip"
+                        severity="primary"
+                        [ngClass]="actionLockClass(!canManageApplications())"
+                        [pTooltip]="tooltipFor('manage', !canManageApplications())"
+                        tooltipPosition="bottom"
+                        (click)="openEditDialog(application)"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-trash"
+                        class="action-chip"
+                        severity="danger"
+                        [ngClass]="actionLockClass(!canDeleteApplications())"
+                        [pTooltip]="tooltipFor('delete', !canDeleteApplications())"
+                        tooltipPosition="bottom"
+                        (click)="openDeleteDialog(application)"
+                      ></button>
+                    </div>
+                  </div>
+                </header>
+
+                <section class="application-details__section">
+                  <h4>Candidate overview</h4>
+                  <div class="application-details__grid">
+                    <div class="application-details__item">
+                      <span class="label">Email</span>
+                      <a class="value" [href]="'mailto:' + application.candidateEmail">
+                        {{ application.candidateEmail }}
+                      </a>
+                    </div>
+                    <div class="application-details__item">
+                      <span class="label">Phone</span>
+                      <span class="value">
+                        {{ application.candidatePhone || 'Not provided' }}
+                      </span>
+                    </div>
+                    <div class="application-details__item">
+                      <span class="label">Department</span>
+                      <span class="value">
+                        {{ jobOpeningDepartment(application) || '—' }}
+                      </span>
+                    </div>
+                    <div class="application-details__item">
+                      <span class="label">Resume</span>
+                      <span class="value">
+                        <a
+                          *ngIf="application.resumeUrl; else noResume"
+                          [href]="application.resumeUrl"
+                          target="_blank"
+                          rel="noopener"
+                        >
+                          View resume
+                        </a>
+                        <ng-template #noResume>Not attached</ng-template>
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="application-details__section">
+                  <h4>Timeline</h4>
+                  <div class="application-details__grid application-details__grid--compact">
+                    <div class="application-details__item">
+                      <span class="label">Applied</span>
+                      <span class="value">
+                        {{ application.appliedAt | date: 'MMMM d, y · h:mm a' }}
+                      </span>
+                    </div>
+                    <div class="application-details__item">
+                      <span class="label">Last updated</span>
+                      <span class="value">
+                        {{ application.updatedAt ? (application.updatedAt | date: 'MMMM d, y · h:mm a') : 'No updates yet' }}
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="application-details__section" *ngIf="application.coverLetter">
+                  <h4>Cover letter</h4>
+                  <p class="application-details__text">{{ application.coverLetter }}</p>
+                </section>
+
+                <section class="application-details__section">
+                  <div class="application-details__section-header">
+                    <h4>Linked interviews</h4>
+                    <button
+                      pButton
+                      type="button"
+                      icon="pi pi-external-link"
+                      label="Go to interviews"
+                      class="link-button"
+                      routerLink="/hr/interviews"
+                      severity="secondary"
+                    ></button>
+                  </div>
+
+                  <ng-container *ngIf="currentInterviews() as interviews">
+                    <div class="application-interviews" *ngIf="interviews.length > 0; else noInterviews">
+                      <div class="interview-item" *ngFor="let interview of interviews">
+                        <div class="interview-item__main">
+                          <span class="interview-item__title">
+                            {{ interview.scheduledAt | date: 'MMMM d, y · h:mm a' }}
+                          </span>
+                          <small>With {{ interview.interviewerName || 'Unassigned interviewer' }}</small>
+                        </div>
+                        <p-tag
+                          [value]="interview.status"
+                          [severity]="interviewStatusSeverity(interview.status)"
+                        ></p-tag>
+                        <span class="interview-item__mode">{{ interview.mode }}</span>
+                      </div>
+                    </div>
+                    <ng-template #noInterviews>
+                      <p class="application-interviews__empty">No interviews linked to this application yet.</p>
+                    </ng-template>
+                  </ng-container>
+                </section>
+              </div>
+            </ng-template>
+          </p-card>
+        </div>
+      </ng-container>
+    </ng-container>
   </ng-container>
 
-  <ng-template #stateTemplate>
-    <div class="panel__status" *ngIf="loading()">Loading job applications…</div>
-    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  <ng-template #loadingState>
+    <div class="hr-applications__state">Loading job applications…</div>
+  </ng-template>
+
+  <ng-template #errorState>
+    <div class="hr-applications__state hr-applications__state--error">{{ error() }}</div>
   </ng-template>
 
   <ng-template #emptyState>
-    <div class="panel__status panel__status--muted">No job applications were returned.</div>
+    <div class="hr-applications__empty">
+      <h3>No job applications yet</h3>
+      <p>Start tracking your candidates by adding the first application.</p>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-user-plus"
+        label="Add application"
+        class="action-button"
+        severity="primary"
+        (click)="openCreateDialog()"
+        [disabled]="!canManageApplications()"
+        [ngClass]="actionLockClass(!canManageApplications())"
+        [pTooltip]="tooltipFor('manage', !canManageApplications())"
+        tooltipPosition="bottom"
+      ></button>
+    </div>
   </ng-template>
-</section>
+</div>
+
+<p-dialog
+  header="{{ formMode() === 'create' ? 'New job application' : 'Edit job application' }}"
+  [visible]="formVisible()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '620px' }"
+  [breakpoints]="{ '960px': '85vw', '640px': '95vw' }"
+  styleClass="application-dialog"
+  (onHide)="closeForm()"
+>
+  <form [formGroup]="applicationForm" class="application-form" (ngSubmit)="submitForm()" novalidate>
+    <div class="form-row">
+      <div class="form-field" [class.is-invalid]="controlInvalid('jobOpeningId')">
+        <label for="jobOpeningId">Job opening *</label>
+        <p-select
+          inputId="jobOpeningId"
+          formControlName="jobOpeningId"
+          [options]="jobOpeningOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select a job opening"
+        >
+          <ng-template pTemplate="selectedItem" let-option>
+            <div class="select-option">
+              <span class="select-option__title">{{ option ? option.label : 'Select a job opening' }}</span>
+              <small *ngIf="option?.description">{{ option.description }}</small>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="item" let-option>
+            <div class="select-option">
+              <span class="select-option__title">{{ option.label }}</span>
+              <small *ngIf="option.description">{{ option.description }}</small>
+            </div>
+          </ng-template>
+        </p-select>
+        <small class="field-message" *ngIf="controlInvalid('jobOpeningId')">
+          Selecting a job opening is required.
+        </small>
+      </div>
+    </div>
+
+    <div class="form-row form-row--two">
+      <div class="form-field" [class.is-invalid]="controlInvalid('candidateName')">
+        <label for="candidateName">Candidate name *</label>
+        <input
+          id="candidateName"
+          type="text"
+          pInputText
+          formControlName="candidateName"
+          placeholder="Jane Doe"
+        />
+        <small class="field-message" *ngIf="controlInvalid('candidateName')">
+          Candidate name is required.
+        </small>
+      </div>
+      <div class="form-field" [class.is-invalid]="controlInvalid('candidateEmail')">
+        <label for="candidateEmail">Email *</label>
+        <input
+          id="candidateEmail"
+          type="email"
+          pInputText
+          formControlName="candidateEmail"
+          placeholder="jane.doe@example.com"
+        />
+        <small class="field-message" *ngIf="controlInvalid('candidateEmail')">
+          Enter a valid candidate email address.
+        </small>
+      </div>
+    </div>
+
+    <div class="form-row form-row--two">
+      <div class="form-field">
+        <label for="candidatePhone">Phone</label>
+        <input
+          id="candidatePhone"
+          type="tel"
+          pInputText
+          formControlName="candidatePhone"
+          placeholder="Optional contact number"
+        />
+      </div>
+      <div class="form-field">
+        <label for="resumeUrl">Resume link</label>
+        <input
+          id="resumeUrl"
+          type="url"
+          pInputText
+          formControlName="resumeUrl"
+          placeholder="https://"
+        />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label for="status">Status</label>
+        <p-select
+          inputId="status"
+          formControlName="status"
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Submitted"
+        ></p-select>
+        <small class="field-hint">Statuses can be updated after reviewing the candidate.</small>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label for="coverLetter">Cover letter</label>
+        <textarea
+          id="coverLetter"
+          pTextarea
+          autoResize
+          formControlName="coverLetter"
+          rows="4"
+          placeholder="Add notes or a summary of the candidate's cover letter"
+        ></textarea>
+        <small class="field-hint">Maximum 4000 characters.</small>
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <button
+        pButton
+        type="button"
+        label="Cancel"
+        class="btn-cancel"
+        severity="secondary"
+        (click)="closeForm()"
+        [disabled]="formSubmitting()"
+      ></button>
+      <button
+        pButton
+        type="submit"
+        class="btn-submit"
+        [label]="formMode() === 'create' ? 'Submit application' : 'Save changes'"
+        severity="primary"
+        [loading]="formSubmitting()"
+        [disabled]="formSubmitting()"
+      ></button>
+    </div>
+  </form>
+</p-dialog>
+
+<p-dialog
+  header="Delete application"
+  [visible]="deleteVisible()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '420px' }"
+  styleClass="delete-dialog"
+  (onHide)="closeDeleteDialog()"
+>
+  <div class="delete-dialog__body">
+    <p>
+      Are you sure you want to delete the application for
+      <strong>{{ selectedApplication()?.candidateName }}</strong>?
+      This action cannot be undone.
+    </p>
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      type="button"
+      label="Cancel"
+      class="btn-cancel"
+      severity="secondary"
+      (click)="closeDeleteDialog()"
+      [disabled]="deleteSubmitting()"
+    ></button>
+    <button
+      pButton
+      type="button"
+      label="Delete"
+      class="btn-danger"
+      severity="danger"
+      (click)="confirmDelete()"
+      [loading]="deleteSubmitting()"
+      [disabled]="deleteSubmitting()"
+    ></button>
+  </ng-template>
+</p-dialog>

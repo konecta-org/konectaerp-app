@@ -1,52 +1,411 @@
-<section class="panel">
-  <header class="panel__header">
-    <div>
-      <h2>Job Openings</h2>
-      <p>Monitor recruiting pipeline, openings, and application volume.</p>
+<section class="job-openings">
+  <header class="job-openings__header">
+    <div class="job-openings__title">
+      <h2>Job openings</h2>
+      <p>Monitor requisitions, posting timelines, and candidate demand.</p>
     </div>
-    <button type="button" (click)="reload()" [disabled]="loading()">
-      {{ loading() ? 'Refreshing…' : 'Refresh' }}
-    </button>
+    <div class="job-openings__actions">
+      <button
+        pButton
+        type="button"
+        label="Add job"
+        icon="pi pi-plus"
+        severity="primary"
+        class="action-button"
+        [ngClass]="actionLockClass(!canManageOpenings())"
+        [pTooltip]="tooltipFor('manage', !canManageOpenings())"
+        tooltipPosition="bottom"
+        (click)="openCreateOpening()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Refresh"
+        icon="pi pi-refresh"
+        severity="secondary"
+        class="action-button"
+        (click)="reload()"
+        [disabled]="loading()"
+        [loading]="loading()"
+      ></button>
+    </div>
   </header>
 
-  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
-    <div class="grid" *ngIf="openings().length > 0; else emptyState">
-      <article class="card" *ngFor="let opening of openings(); trackBy: trackByOpening">
-        <header class="card__header">
-          <h3>{{ opening.title }}</h3>
-          <span class="status status--{{ opening.status | lowercase }}">{{ opening.status }}</span>
-        </header>
-        <div class="card__meta">
-          <span><strong>Department:</strong> {{ opening.departmentName || '—' }}</span>
-          <span><strong>Location:</strong> {{ opening.location || 'Flexible' }}</span>
-          <span><strong>Employment:</strong> {{ opening.employmentType || 'Not specified' }}</span>
+  <p-message
+    *ngIf="feedback()"
+    severity="success"
+    [text]="feedback() ?? ''"
+    [closable]="true"
+    class="job-openings__message"
+    (onClose)="clearFeedback()"
+  ></p-message>
+
+  <p-message
+    *ngIf="error()"
+    severity="error"
+    [text]="error() ?? ''"
+    [closable]="true"
+    class="job-openings__message"
+    (onClose)="error.set(null)"
+  ></p-message>
+
+  <div class="job-openings__content" *ngIf="hasOpenings(); else emptyTemplate">
+    <p-table
+      class="job-openings__table"
+      [value]="openings()"
+      [loading]="loading()"
+      dataKey="id"
+      [rowHover]="true"
+      [responsiveLayout]="'scroll'"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Title</th>
+          <th>Department</th>
+          <th>Status</th>
+          <th class="column-center">Applications</th>
+          <th class="column-date">Closing</th>
+          <th class="column-actions">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-opening>
+        <tr (click)="viewOpening(opening)" [class.row-selected]="selectedOpening()?.id === opening.id">
+          <td>
+            <div class="cell-main">
+              <span class="cell-main__title">{{ opening.title }}</span>
+              <small>Posted {{ (opening.postedDate || opening.createdAt) | date: 'mediumDate' }}</small>
+            </div>
+          </td>
+          <td>
+            <span *ngIf="opening.departmentName; else noDepartment">{{ opening.departmentName }}</span>
+            <ng-template #noDepartment><span class="placeholder">No department</span></ng-template>
+          </td>
+          <td>
+            <p-tag [value]="opening.status" [severity]="statusSeverity(opening.status)"></p-tag>
+          </td>
+          <td class="column-center">
+            <span class="metric-chip">{{ opening.applicationCount ?? 0 }}</span>
+          </td>
+          <td class="column-date">
+            <span>{{ opening.closingDate ? (opening.closingDate | date: 'mediumDate') : '—' }}</span>
+          </td>
+          <td class="table-actions" (click)="$event.stopPropagation()">
+            <div class="action-chip-group">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-eye"
+                label="View"
+                severity="secondary"
+                class="action-chip"
+                (click)="viewOpening(opening)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-pencil"
+                label="Edit"
+                severity="info"
+                class="action-chip"
+                [ngClass]="actionLockClass(!canManageOpenings())"
+                [pTooltip]="tooltipFor('manage', !canManageOpenings())"
+                tooltipPosition="bottom"
+                (click)="openEditOpening(opening, $event)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-trash"
+                label="Delete"
+                severity="danger"
+                class="action-chip"
+                [ngClass]="actionLockClass(!canDeleteOpenings())"
+                [pTooltip]="tooltipFor('delete', !canDeleteOpenings())"
+                tooltipPosition="bottom"
+                (click)="openDeleteConfirmation(opening, $event)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">No job openings were returned.</div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <p-card class="job-openings__details" *ngIf="detailVisible() && selectedOpening() as opening">
+      <ng-template pTemplate="content">
+        <div class="opening-details">
+          <header class="opening-details__header">
+            <div class="opening-details__identity">
+              <h3 class="opening-details__title">{{ opening.title }}</h3>
+              <p class="opening-details__subtitle">
+                {{ employmentTypeLabel(opening.employmentType) }} &bull; {{ opening.departmentName || 'No department assigned' }}
+              </p>
+            </div>
+            <p-tag
+              class="opening-details__status"
+              [value]="opening.status"
+              [severity]="statusSeverity(opening.status)"
+            ></p-tag>
+          </header>
+
+          <section class="opening-details__section">
+            <h4 class="opening-details__label">Overview</h4>
+            <div class="opening-details__grid">
+              <div class="opening-details__item">
+                <span class="opening-details__item-label">Department</span>
+                <span class="opening-details__item-value">{{ opening.departmentName || 'No department assigned' }}</span>
+              </div>
+              <div class="opening-details__item">
+                <span class="opening-details__item-label">Location</span>
+                <span class="opening-details__item-value">{{ opening.location || 'Flexible/Remote' }}</span>
+              </div>
+              <div class="opening-details__item">
+                <span class="opening-details__item-label">Applications</span>
+                <span class="opening-details__item-value">{{ opening.applicationCount ?? 0 }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="opening-details__section">
+            <h4 class="opening-details__label">Timeline</h4>
+            <div class="opening-details__grid">
+              <div class="opening-details__item">
+                <span class="opening-details__item-label">Posted</span>
+                <span class="opening-details__item-value">{{ (opening.postedDate || opening.createdAt) | date: 'MMMM d, y' }}</span>
+              </div>
+              <div class="opening-details__item">
+                <span class="opening-details__item-label">Closing</span>
+                <span class="opening-details__item-value">
+                  {{ opening.closingDate ? (opening.closingDate | date: 'MMMM d, y') : 'Not scheduled' }}
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section class="opening-details__section">
+            <h4 class="opening-details__label">Compensation</h4>
+            <div class="opening-details__item">
+              <span class="opening-details__item-value opening-details__item-value--strong">
+                <ng-container *ngIf="opening.salaryMin || opening.salaryMax; else noSalary">
+                  {{ opening.salaryMin ? (opening.salaryMin | currency: 'USD':'symbol':'1.0-0') : '—' }}
+                  &ndash;
+                  {{ opening.salaryMax ? (opening.salaryMax | currency: 'USD':'symbol':'1.0-0') : '—' }}
+                </ng-container>
+                <ng-template #noSalary>No salary range specified</ng-template>
+              </span>
+            </div>
+          </section>
+
+          <section class="opening-details__section">
+            <h4 class="opening-details__label">Description</h4>
+            <p class="opening-details__paragraph">{{ opening.description || 'No description provided yet.' }}</p>
+          </section>
+
+          <section class="opening-details__section">
+            <h4 class="opening-details__label">Requirements</h4>
+            <p class="opening-details__paragraph">{{ opening.requirements || 'No requirements captured yet.' }}</p>
+          </section>
         </div>
-        <p class="card__description" *ngIf="opening.description">{{ opening.description }}</p>
+      </ng-template>
 
-        <ul class="card__stats">
-          <li>
-            <span class="label">Posted</span>
-            <span class="value">{{ opening.postedDate || opening.createdAt | date: 'mediumDate' }}</span>
-          </li>
-          <li>
-            <span class="label">Closing</span>
-            <span class="value">{{ opening.closingDate ? (opening.closingDate | date: 'mediumDate') : '—' }}</span>
-          </li>
-          <li>
-            <span class="label">Applications</span>
-            <span class="value">{{ opening.applicationCount ?? 0 }}</span>
-          </li>
-        </ul>
-      </article>
+      <ng-template pTemplate="footer">
+        <div class="details__actions">
+          <button
+            pButton
+            type="button"
+            label="Edit"
+            icon="pi pi-pencil"
+            severity="primary"
+            class="action-button"
+            [ngClass]="actionLockClass(!canManageOpenings())"
+            [pTooltip]="tooltipFor('manage', !canManageOpenings())"
+            tooltipPosition="bottom"
+            (click)="openEditOpening(opening)"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Delete"
+            icon="pi pi-trash"
+            severity="danger"
+            class="action-button"
+            [ngClass]="actionLockClass(!canDeleteOpenings())"
+            [pTooltip]="tooltipFor('delete', !canDeleteOpenings())"
+            tooltipPosition="bottom"
+            (click)="openDeleteConfirmation(opening)"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Close"
+            icon="pi pi-times"
+            severity="success"
+            class="action-button"
+            (click)="closeDetails()"
+          ></button>
+        </div>
+      </ng-template>
+    </p-card>
+  </div>
+
+  <ng-template #emptyTemplate>
+    <div class="empty-state" *ngIf="!loading()">No job openings were returned.</div>
+    <div class="empty-state" *ngIf="loading()">Loading job openings…</div>
+  </ng-template>
+
+  <p-dialog
+    header="{{ formMode() === 'create' ? 'Add job opening' : 'Edit job opening' }}"
+    [visible]="formVisible()"
+    [modal]="true"
+    [style]="{ width: '680px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [closeOnEscape]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    (onHide)="closeJobForm()"
+  >
+    <form class="dialog-form p-fluid form-grid" [formGroup]="jobForm" (ngSubmit)="submitJobForm()" autocomplete="off">
+      <div class="form-field form-field--full">
+        <label for="jobTitle">Job title</label>
+        <input pInputText id="jobTitle" formControlName="title" />
+        <small *ngIf="jobControlInvalid('title')">Title is required and must be under 150 characters.</small>
+      </div>
+      <div class="form-field">
+        <label for="jobDepartment">Department</label>
+        <p-dropdown
+          inputId="jobDepartment"
+          formControlName="departmentId"
+          [options]="departmentOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select department"
+          showClear="true"
+        ></p-dropdown>
+      </div>
+      <div class="form-field">
+        <label for="jobEmployment">Employment type</label>
+        <p-dropdown
+          inputId="jobEmployment"
+          formControlName="employmentType"
+          [options]="employmentTypeOptions"
+          optionLabel="label"
+          optionValue="value"
+        ></p-dropdown>
+      </div>
+      <div class="form-field">
+        <label for="jobStatus">Status</label>
+        <p-dropdown
+          inputId="jobStatus"
+          formControlName="status"
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+        ></p-dropdown>
+      </div>
+      <div class="form-field">
+        <label for="jobLocation">Location</label>
+        <input pInputText id="jobLocation" formControlName="location" />
+        <small *ngIf="jobControlInvalid('location')">Location must be under 150 characters.</small>
+      </div>
+      <div class="form-field">
+        <label for="jobClosing">Closing date</label>
+        <p-datePicker
+          inputId="jobClosing"
+          formControlName="closingDate"
+          [showIcon]="true"
+          [inputStyle]="{ width: '100%' }"
+          [panelStyle]="{ minWidth: '18rem' }"
+          [placeholder]="'Select date'"
+        ></p-datePicker>
+      </div>
+      <div class="form-field">
+        <label for="salaryMin">Salary minimum</label>
+        <p-inputNumber inputId="salaryMin" formControlName="salaryMin" mode="currency" currency="USD" [minFractionDigits]="0"></p-inputNumber>
+      </div>
+      <div class="form-field">
+        <label for="salaryMax">Salary maximum</label>
+        <p-inputNumber inputId="salaryMax" formControlName="salaryMax" mode="currency" currency="USD" [minFractionDigits]="0"></p-inputNumber>
+      </div>
+      <div class="form-field form-field--full">
+        <label for="jobDescription">Description</label>
+        <textarea pInputTextarea id="jobDescription" rows="4" formControlName="description"></textarea>
+        <small *ngIf="jobControlInvalid('description')">Description must be under 4000 characters.</small>
+      </div>
+      <div class="form-field form-field--full">
+        <label for="jobRequirements">Requirements</label>
+        <textarea pInputTextarea id="jobRequirements" rows="4" formControlName="requirements"></textarea>
+        <small *ngIf="jobControlInvalid('requirements')">Requirements must be under 4000 characters.</small>
+      </div>
+    </form>
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          severity="secondary"
+          class="action-button"
+          (click)="closeJobForm()"
+          [disabled]="formSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          [label]="formMode() === 'create' ? 'Create job' : 'Save changes'"
+          severity="primary"
+          class="action-button"
+          [loading]="formSubmitting()"
+          (click)="submitJobForm()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    header="Delete job opening"
+    [visible]="deleteVisible()"
+    [modal]="true"
+    [style]="{ width: '420px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [closeOnEscape]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    (onHide)="closeDeleteDialog()"
+  >
+    <div class="dialog-content">
+      <p>Are you sure you want to delete <strong>{{ selectedOpening()?.title }}</strong>? This action cannot be undone.</p>
     </div>
-  </ng-container>
-
-  <ng-template #stateTemplate>
-    <div class="panel__status" *ngIf="loading()">Loading job openings…</div>
-    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
-  </ng-template>
-
-  <ng-template #emptyState>
-    <div class="panel__status panel__status--muted">No job openings were returned.</div>
-  </ng-template>
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          severity="secondary"
+          class="action-button"
+          (click)="closeDeleteDialog()"
+          [disabled]="deleteSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Delete"
+          severity="danger"
+          class="action-button"
+          [loading]="deleteSubmitting()"
+          (click)="confirmDelete()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
 </section>

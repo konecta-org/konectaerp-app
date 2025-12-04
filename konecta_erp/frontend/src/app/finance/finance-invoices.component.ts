@@ -212,9 +212,11 @@ export class FinanceInvoicesComponent implements OnInit {
         this.showFeedback(this.formMode() === 'create' ? 'Invoice created successfully.' : 'Invoice updated successfully.');
         this.loadInvoices();
       },
-      error: () => {
+      error: (err) => {
         this.formSubmitting.set(false);
-        this.showFeedback('Failed to save invoice. Please try again.');
+        console.error('Invoice save error:', err);
+        const errorMsg = err?.error?.errors ? JSON.stringify(err.error.errors) : (err?.error?.title || 'Unknown error');
+        this.showFeedback(`Failed to save invoice: ${errorMsg}`);
       }
     });
   }

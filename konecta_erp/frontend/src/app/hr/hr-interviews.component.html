@@ -1,45 +1,417 @@
-<section class="panel">
-  <header class="panel__header">
-    <div>
+<div class="hr-interviews">
+  <header class="hr-interviews__header">
+    <div class="hr-interviews__title">
       <h2>Interviews</h2>
-      <p>Review scheduled interviews, statuses, and responsible interviewers.</p>
+      <p>Track scheduled interviews, assign interviewers, and monitor progress through each stage.</p>
     </div>
-    <button type="button" (click)="reload()" [disabled]="loading()">
-      {{ loading() ? 'Refreshing…' : 'Refresh' }}
-    </button>
+    <div class="hr-interviews__actions">
+      <button
+        pButton
+        type="button"
+        label="Schedule interview"
+        icon="pi pi-calendar-plus"
+        class="action-button"
+        severity="primary"
+        (click)="openScheduleDialog()"
+        [disabled]="!canManageInterviews()"
+        [pTooltip]="tooltipFor('manage', !canManageInterviews())"
+        tooltipPosition="bottom"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Refresh"
+        icon="pi pi-refresh"
+        class="action-button"
+        severity="secondary"
+        (click)="reload()"
+        [loading]="loading()"
+      ></button>
+    </div>
   </header>
 
-  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
-    <table *ngIf="interviews().length > 0; else emptyState">
-      <thead>
+  <p-message
+    *ngIf="feedback(); else errorBlock"
+    severity="success"
+    [text]="feedback()!"
+    class="hr-interviews__message"
+    (onClose)="clearFeedback()"
+    [closable]="true"
+  ></p-message>
+
+  <ng-template #errorBlock>
+    <p-message *ngIf="error()" severity="error" [text]="error()!" class="hr-interviews__message"></p-message>
+  </ng-template>
+
+  <div class="hr-interviews__content">
+    <p-table
+      class="hr-interviews__table"
+      [value]="interviews()"
+      [loading]="loading()"
+      [rowHover]="true"
+      [style.tableLayout]="'auto'"
+      [paginator]="false"
+      dataKey="id"
+    >
+      <ng-template pTemplate="header">
         <tr>
           <th>Scheduled</th>
-          <th>Interview Type</th>
+          <th>Candidate</th>
+          <th>Interviewer</th>
           <th>Status</th>
-          <th>Application</th>
+          <th>Mode</th>
           <th>Notes</th>
+          <th class="actions-column">Actions</th>
         </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let interview of interviews(); trackBy: trackByInterview">
-          <td>{{ interview.scheduledAt | date: 'medium' }}</td>
-          <td>{{ interview.interviewType || '—' }}</td>
+      </ng-template>
+      <ng-template pTemplate="body" let-interview>
+        <tr (click)="viewInterview(interview)" [class.is-selected]="selectedInterview()?.id === interview.id">
           <td>
-            <span class="status status--{{ interview.status | lowercase }}">{{ interview.status }}</span>
+            <div class="cell-main">
+              <span class="cell-main__title">{{ interview.scheduledAt | date: 'MMMM d, y · h:mm a' }}</span>
+              <small>Created {{ interview.createdAt ? (interview.createdAt | date: 'MMMM d, y h:mm a') : '—' }}</small>
+            </div>
           </td>
-          <td>{{ interview.jobApplicationTitle || interview.jobApplicationId }}</td>
-          <td>{{ interview.notes || '—' }}</td>
+          <td>
+            <div class="cell-main">
+              <span class="cell-main__title">{{ interview.candidateName || 'Unknown candidate' }}</span>
+              <small>{{ interview.jobApplicationTitle || interview.jobApplicationId }}</small>
+            </div>
+          </td>
+          <td>{{ interview.interviewerName || 'Unassigned' }}</td>
+          <td>
+            <p-tag [value]="interview.status" [severity]="interviewStatusSeverity(interview.status)"></p-tag>
+          </td>
+          <td>
+            <span class="mode-chip">{{ interview.mode }}</span>
+          </td>
+          <td>
+            <span class="ellipsis" [pTooltip]="interview.notes || 'No notes'" tooltipPosition="bottom">
+              {{ interview.notes || '—' }}
+            </span>
+          </td>
+          <td class="actions-column">
+            <div class="action-chip-group">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-eye"
+                class="action-chip"
+                severity="secondary"
+                (click)="viewInterview(interview); $event.stopPropagation()"
+                pTooltip="View details"
+                tooltipPosition="bottom"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-pencil"
+                class="action-chip"
+                severity="primary"
+                [ngClass]="actionLockClass(!canManageInterviews())"
+                [pTooltip]="tooltipFor('manage', !canManageInterviews())"
+                tooltipPosition="bottom"
+                (click)="openEditDialog(interview, $event)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-trash"
+                class="action-chip"
+                severity="danger"
+                [ngClass]="actionLockClass(!canDeleteInterviews())"
+                [pTooltip]="tooltipFor('delete', !canDeleteInterviews())"
+                tooltipPosition="bottom"
+                (click)="openDeleteDialog(interview, $event)"
+              ></button>
+            </div>
+          </td>
         </tr>
-      </tbody>
-    </table>
-  </ng-container>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">No interviews were returned.</div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
 
-  <ng-template #stateTemplate>
-    <div class="panel__status" *ngIf="loading()">Loading interviews…</div>
-    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
-  </ng-template>
+    <p-card class="hr-interviews__details" *ngIf="detailVisible() && selectedInterview() as interview">
+      <ng-template pTemplate="content">
+        <div class="interview-details">
+          <header class="interview-details__header">
+            <div class="interview-details__identity">
+              <h3 class="interview-details__title">{{ interview.candidateName || 'Interview' }}</h3>
+              <p class="interview-details__subtitle">
+                {{ interview.jobApplicationTitle || 'Linked application' }}
+              </p>
+            </div>
+            <p-tag
+              class="interview-details__status"
+              [value]="interview.status"
+              [severity]="interviewStatusSeverity(interview.status)"
+            ></p-tag>
+          </header>
 
-  <ng-template #emptyState>
-    <div class="panel__status panel__status--muted">No interviews were returned.</div>
-  </ng-template>
-</section>
+          <section class="interview-details__section">
+            <h4 class="interview-details__label">Overview</h4>
+            <div class="interview-details__grid">
+              <div class="interview-details__item">
+                <span class="interview-details__item-label">Candidate</span>
+                <span class="interview-details__item-value">{{ interview.candidateName || 'Unknown' }}</span>
+              </div>
+              <div class="interview-details__item">
+                <span class="interview-details__item-label">Application</span>
+                <span class="interview-details__item-value">{{ interview.jobApplicationTitle || interview.jobApplicationId }}</span>
+              </div>
+              <div class="interview-details__item">
+                <span class="interview-details__item-label">Interviewer</span>
+                <span class="interview-details__item-value">{{ interview.interviewerName || 'Unassigned' }}</span>
+              </div>
+              <div class="interview-details__item">
+                <span class="interview-details__item-label">Mode</span>
+                <span class="interview-details__item-value">{{ interview.mode || 'In Person' }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="interview-details__section">
+            <h4 class="interview-details__label">Timeline</h4>
+            <div class="interview-details__grid">
+              <div class="interview-details__item">
+                <span class="interview-details__item-label">Scheduled for</span>
+                <span class="interview-details__item-value">{{ interview.scheduledAt | date: 'MMMM d, y · h:mm a' }}</span>
+              </div>
+              <div class="interview-details__item">
+                <span class="interview-details__item-label">Created</span>
+                <span class="interview-details__item-value">{{ interview.createdAt ? (interview.createdAt | date: 'MMMM d, y · h:mm a') : 'Not available' }}</span>
+              </div>
+              <div class="interview-details__item">
+                <span class="interview-details__item-label">Updated</span>
+                <span class="interview-details__item-value">{{ interview.updatedAt ? (interview.updatedAt | date: 'MMMM d, y · h:mm a') : 'Never updated' }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="interview-details__section">
+            <h4 class="interview-details__label">Location</h4>
+            <p class="interview-details__paragraph">{{ interview.location || 'Not specified. Add details when scheduling.' }}</p>
+          </section>
+
+          <section class="interview-details__section">
+            <h4 class="interview-details__label">Notes</h4>
+            <p class="interview-details__paragraph">{{ interview.notes || 'No additional notes captured.' }}</p>
+          </section>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="footer">
+        <div class="details__actions">
+          <button
+            pButton
+            type="button"
+            label="Edit"
+            icon="pi pi-pencil"
+            severity="primary"
+            class="action-button"
+            [ngClass]="actionLockClass(!canManageInterviews())"
+            [pTooltip]="tooltipFor('manage', !canManageInterviews())"
+            tooltipPosition="bottom"
+            (click)="openEditDialog(interview)"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Delete"
+            icon="pi pi-trash"
+            severity="danger"
+            class="action-button"
+            [ngClass]="actionLockClass(!canDeleteInterviews())"
+            [pTooltip]="tooltipFor('delete', !canDeleteInterviews())"
+            tooltipPosition="bottom"
+            (click)="openDeleteDialog(interview)"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Close"
+            icon="pi pi-times"
+            severity="success"
+            class="action-button"
+            (click)="closeDetails()"
+          ></button>
+        </div>
+      </ng-template>
+    </p-card>
+  </div>
+
+  <p-dialog
+    header="{{ formMode() === 'create' ? 'Schedule interview' : 'Edit interview' }}"
+    [visible]="formVisible()"
+    [modal]="true"
+    styleClass="interview-dialog"
+    [draggable]="false"
+    [resizable]="false"
+    (onHide)="closeForm()"
+  >
+    <form class="dialog-form" [formGroup]="interviewForm" (ngSubmit)="submitForm()">
+      <div class="form-grid">
+        <div class="form-field form-field--full">
+          <label for="interviewApplication">Job application</label>
+          <p-select
+            inputId="interviewApplication"
+            formControlName="jobApplicationId"
+            [options]="applicationOptions()"
+            optionLabel="label"
+            optionValue="value"
+            optionDisabled="disabled"
+            placeholder="Select job application"
+            [appendTo]="'body'"
+          >
+            <ng-template pTemplate="selectedItem" let-option>
+              <div class="select-option select-option--selected" *ngIf="option; else selectPlaceholder">
+                <span class="select-option__title">{{ option.label }}</span>
+                <small *ngIf="option.description">{{ option.description }}</small>
+              </div>
+            </ng-template>
+            <ng-template pTemplate="item" let-option>
+              <div class="select-option" [class.select-option--disabled]="option.disabled">
+                <span class="select-option__title">{{ option.label }}</span>
+                <small *ngIf="option.description">{{ option.description }}</small>
+              </div>
+            </ng-template>
+          </p-select>
+          <ng-template #selectPlaceholder>
+            <span class="select-placeholder">Select job application</span>
+          </ng-template>
+          <small *ngIf="controlInvalid('jobApplicationId')">Job application selection is required.</small>
+        </div>
+
+        <div class="form-field form-field--full">
+          <label for="interviewer">Interviewer</label>
+          <p-select
+            inputId="interviewer"
+            formControlName="interviewerEmployeeId"
+            placeholder="Assign interviewer (optional)"
+            [options]="interviewerOptions()"
+            optionLabel="label"
+            optionValue="value"
+            optionDisabled="disabled"
+            [appendTo]="'body'"
+            showClear
+          ></p-select>
+        </div>
+
+        <div class="form-field">
+          <label for="scheduledAt">Scheduled date & time</label>
+          <p-datePicker
+            inputId="scheduledAt"
+            formControlName="scheduledAt"
+            [showIcon]="true"
+            [showTime]="true"
+            hourFormat="24"
+            [inputStyle]="{ width: '100%' }"
+            [panelStyle]="{ minWidth: '20rem' }"
+            placeholder="Select date and time"
+          ></p-datePicker>
+          <small *ngIf="controlInvalid('scheduledAt')">Please provide a valid schedule date.</small>
+        </div>
+
+        <div class="form-field">
+          <label for="mode">Interview mode</label>
+          <p-select
+            inputId="mode"
+            formControlName="mode"
+            [options]="modeOptions"
+            optionLabel="label"
+            optionValue="value"
+            [appendTo]="'body'"
+          ></p-select>
+        </div>
+
+        <div class="form-field">
+          <label for="status">Status</label>
+          <p-select
+            inputId="status"
+            formControlName="status"
+            [options]="statusOptions"
+            optionLabel="label"
+            optionValue="value"
+            [appendTo]="'body'"
+          ></p-select>
+        </div>
+
+        <div class="form-field">
+          <label for="location">Location / Join link</label>
+          <input pInputText id="location" formControlName="location" />
+        </div>
+
+        <div class="form-field form-field--full">
+          <label for="notes">Notes</label>
+          <p-textarea
+            id="notes"
+            formControlName="notes"
+            autoResize
+            rows="4"
+            placeholder="Add preparation details, agenda, or expectations"
+          ></p-textarea>
+        </div>
+      </div>
+
+      <footer class="dialog-actions">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          class="action-button"
+          severity="secondary"
+          (click)="closeForm()"
+        ></button>
+        <button
+          pButton
+          type="submit"
+          class="action-button"
+          severity="primary"
+          [loading]="formSubmitting()"
+          [disabled]="interviewForm.invalid || formSubmitting()"
+          label="{{ formMode() === 'create' ? 'Schedule' : 'Save changes' }}"
+        ></button>
+      </footer>
+    </form>
+  </p-dialog>
+
+  <p-dialog
+    header="Cancel interview"
+    [visible]="deleteVisible()"
+    [modal]="true"
+    styleClass="confirm-dialog"
+    [draggable]="false"
+    [resizable]="false"
+    (onHide)="closeDeleteDialog()"
+  >
+    <div class="dialog-content">
+      Are you sure you want to delete this interview? This action cannot be undone.
+    </div>
+    <footer class="dialog-actions">
+      <button
+        pButton
+        type="button"
+        label="Cancel"
+        class="action-button"
+        severity="secondary"
+        (click)="closeDeleteDialog()"
+        [disabled]="deleteSubmitting()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Delete"
+        class="action-button"
+        severity="danger"
+        (click)="confirmDelete()"
+        [loading]="deleteSubmitting()"
+      ></button>
+    </footer>
+  </p-dialog>
+</div>

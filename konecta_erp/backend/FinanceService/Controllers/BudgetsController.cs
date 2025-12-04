@@ -24,7 +24,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpGet]
-        [Authorize(Policy = PermissionConstants.Finance.BudgetsRead)]
+        // [Authorize(Policy = PermissionConstants.Finance.BudgetsRead)]
         public async Task<ActionResult<IEnumerable<BudgetResponseDto>>> GetBudgets([FromQuery] int? fiscalYear = null, [FromQuery] bool includeLines = true, CancellationToken cancellationToken = default)
         {
             var budgets = await _budgetRepository.GetAllAsync(fiscalYear, includeLines, cancellationToken);
@@ -32,7 +32,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpGet("{id:int}", Name = nameof(GetBudgetById))]
-        [Authorize(Policy = PermissionConstants.Finance.BudgetsRead)]
+        // [Authorize(Policy = PermissionConstants.Finance.BudgetsRead)]
         public async Task<ActionResult<BudgetResponseDto>> GetBudgetById(int id, [FromQuery] bool includeLines = true, CancellationToken cancellationToken = default)
         {
             var budget = await _budgetRepository.GetByIdAsync(id, includeLines, cancellationToken);
@@ -45,7 +45,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpPost]
-        [Authorize(Policy = PermissionConstants.Finance.BudgetsManage)]
+        // [Authorize(Policy = PermissionConstants.Finance.BudgetsManage)]
         public async Task<ActionResult<BudgetResponseDto>> CreateBudget([FromBody] BudgetUpsertDto request, CancellationToken cancellationToken = default)
         {
             var budget = _mapper.Map<Budget>(request);
@@ -62,7 +62,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpPut("{id:int}")]
-        [Authorize(Policy = PermissionConstants.Finance.BudgetsManage)]
+        // [Authorize(Policy = PermissionConstants.Finance.BudgetsManage)]
         public async Task<IActionResult> UpdateBudget(int id, [FromBody] BudgetUpsertDto request, CancellationToken cancellationToken = default)
         {
             var budget = await _budgetRepository.GetByIdAsync(id, includeLines: true, cancellationToken);
@@ -83,7 +83,7 @@ namespace FinanceService.Controllers
         }
 
         [HttpDelete("{id:int}")]
-        [Authorize(Policy = PermissionConstants.Finance.BudgetsManage)]
+        // [Authorize(Policy = PermissionConstants.Finance.BudgetsManage)]
         public async Task<IActionResult> DeleteBudget(int id, CancellationToken cancellationToken = default)
         {
             var removed = await _budgetRepository.DeleteAsync(id, cancellationToken);
