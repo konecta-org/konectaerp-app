@@ -1,0 +1,598 @@
+.panel {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.45rem;
+    color: #0f172a;
+  }
+
+  p {
+    margin: 0.25rem 0 0;
+    color: #475467;
+  }
+
+  button {
+    border: none;
+    border-radius: 0.6rem;
+    padding: 0.55rem 1rem;
+    background: #0055b3;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: #003f84;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: progress;
+    }
+  }
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+
+  button {
+    white-space: nowrap;
+  }
+
+  .btn-add {
+    background: #16a34a;
+
+    &:hover:not(:disabled) {
+      background: #15803d;
+    }
+  }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+  }
+
+  th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #475467;
+  }
+}
+
+.payroll-number {
+  font-weight: 600;
+  color: #1d4ed8;
+}
+
+.period {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+
+  &-to {
+    color: #94a3b8;
+  }
+}
+
+.employee-count {
+  text-align: center;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.amount {
+  font-weight: 600;
+  color: #0f172a;
+
+  &--net {
+    color: #16a34a;
+  }
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+
+  &--completed {
+    background: rgba(34, 197, 94, 0.16);
+    color: #16a34a;
+  }
+
+  &--processing {
+    background: rgba(14, 165, 233, 0.16);
+    color: #0284c7;
+  }
+
+  &--draft {
+    background: rgba(100, 116, 139, 0.16);
+    color: #475569;
+  }
+
+  &--cancelled {
+    background: rgba(239, 68, 68, 0.16);
+    color: #b91c1c;
+  }
+}
+
+.btn-view {
+  border: none;
+  background: transparent;
+  color: #1d4ed8;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.4rem;
+
+  &:hover {
+    background: rgba(29, 78, 216, 0.08);
+  }
+}
+
+.btn-edit {
+  border: none;
+  background: transparent;
+  color: #f59e0b;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.4rem;
+
+  &:hover {
+    background: rgba(245, 158, 11, 0.08);
+  }
+}
+
+.btn-delete {
+  border: none;
+  background: transparent;
+  color: #ef4444;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.4rem;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.08);
+  }
+}
+
+.actions {
+  white-space: nowrap;
+}
+
+.panel__status {
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 500;
+
+  &--error {
+    background: #fef2f2;
+    color: #b91c1c;
+  }
+
+  &--muted {
+    background: #f1f5f9;
+    color: #64748b;
+    text-align: center;
+  }
+}
+
+// Modal
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 1rem;
+  width: 90%;
+  max-width: 800px;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+
+  &--form {
+    max-width: 900px;
+    max-height: 90vh;
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+
+    h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: #0f172a;
+    }
+  }
+
+  &__close {
+    border: none;
+    background: transparent;
+    font-size: 1.5rem;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+
+    &:hover {
+      color: #0f172a;
+    }
+  }
+
+  &__body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    flex: 1;
+    min-height: 0;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+    flex-shrink: 0;
+  }
+
+  // Form inside modal needs to be flex container too
+  form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+// Form Styles
+.form-row {
+  display: flex;
+  gap: 1rem;
+
+  .form-group {
+    flex: 1;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  label {
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.9rem;
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: #0055b3;
+      box-shadow: 0 0 0 3px rgba(0, 85, 179, 0.1);
+    }
+
+    &.ng-invalid.ng-touched {
+      border-color: #ef4444;
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+}
+
+.entries-section {
+  h4 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    color: #0f172a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .btn-add-entry {
+    border: 1px dashed #0055b3;
+    background: rgba(0, 85, 179, 0.04);
+    color: #0055b3;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+
+    &:hover {
+      background: rgba(0, 85, 179, 0.1);
+    }
+  }
+}
+
+.entries-form-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+
+  th,
+  td {
+    padding: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+  }
+
+  th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #475467;
+    font-size: 0.8rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+
+    &:focus {
+      outline: none;
+      border-color: #0055b3;
+    }
+
+    &[readonly] {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+  }
+
+  .btn-remove-entry {
+    border: none;
+    background: transparent;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 1.1rem;
+
+    &:hover:not(:disabled) {
+      color: #b91c1c;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.totals-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+
+  .total-line {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1.5rem;
+
+    span:first-child {
+      color: #64748b;
+    }
+
+    span:last-child {
+      font-weight: 600;
+      min-width: 120px;
+      text-align: right;
+    }
+
+    &--main {
+      font-size: 1rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid #e2e8f0;
+
+      span:last-child {
+        font-weight: 700;
+        color: #16a34a;
+      }
+    }
+  }
+}
+
+.btn-cancel {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.55rem 1rem;
+  border-radius: 0.5rem;
+
+  &:hover {
+    background: #f3f4f6;
+  }
+}
+
+.btn-save {
+  border: none;
+  background: #0055b3;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.55rem 1rem;
+  border-radius: 0.5rem;
+
+  &:hover:not(:disabled) {
+    background: #003f84;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.payroll-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .label {
+    font-weight: 500;
+    color: #64748b;
+  }
+}
+
+.payroll-totals {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.total-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+
+  small {
+    color: #64748b;
+  }
+
+  span {
+    font-weight: 700;
+    font-size: 1.35rem;
+    color: #0f172a;
+  }
+
+  &--net span {
+    color: #16a34a;
+  }
+}
+
+.payroll-entries {
+  h4 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    color: #0f172a;
+  }
+}
+
+.entries-table {
+  font-size: 0.9rem;
+
+  th,
+  td {
+    padding: 0.6rem 0.75rem;
+  }
+}
+
+.employee-cell {
+  display: flex;
+  flex-direction: column;
+
+  small {
+    color: #94a3b8;
+    font-size: 0.75rem;
+  }
+}
+
+.employee-name {
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.deductions,
+.taxes {
+  color: #b91c1c;
+}
+
+.net-pay {
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.payroll-notes {
+  margin: 0;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  color: #475467;
+  font-size: 0.9rem;
+
+  strong {
+    color: #0f172a;
+  }
+}

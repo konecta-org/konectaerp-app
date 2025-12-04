@@ -1,0 +1,41 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>Finance Overview</h2>
+      <p>Key indicators for receivables, expenses, budgets, and payroll.</p>
+    </div>
+    <button type="button" (click)="reload()" [disabled]="loading()">
+      {{ loading() ? 'Refreshing…' : 'Refresh' }}
+    </button>
+  </header>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <div class="metrics" *ngIf="summary() as data">
+      <article class="metric">
+        <span>{{ formatCurrency(data.outstandingReceivables) }}</span>
+        <small>Outstanding receivables</small>
+      </article>
+      <article class="metric metric--alert" *ngIf="data.overdueReceivables > 0">
+        <span>{{ formatCurrency(data.overdueReceivables) }}</span>
+        <small>Overdue receivables</small>
+      </article>
+      <article class="metric">
+        <span>{{ formatCurrency(data.currentMonthExpenseTotal) }}</span>
+        <small>Current month expenses</small>
+      </article>
+      <article class="metric">
+        <span>{{ formatPercent(data.budgetUtilization) }}</span>
+        <small>Budget utilization</small>
+      </article>
+      <article class="metric">
+        <span>{{ formatCurrency(data.upcomingPayrollCommitment) }}</span>
+        <small>Upcoming payroll</small>
+      </article>
+    </div>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading summary…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+</section>

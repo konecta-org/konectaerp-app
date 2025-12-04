@@ -1,0 +1,196 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>Budgets</h2>
+      <p>Manage fiscal year budgets, track allocations, and monitor spending.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn--primary" (click)="openCreateDialog()">
+        + Add Budget
+      </button>
+      <button type="button" class="btn btn--secondary" (click)="reload()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+  </header>
+
+  <!-- Feedback Message -->
+  <div class="feedback" *ngIf="feedback()">{{ feedback() }}</div>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <div class="grid" *ngIf="budgets().length > 0; else emptyState">
+      <article class="card" *ngFor="let budget of budgets(); trackBy: trackById">
+        <header class="card__header">
+          <h3>{{ budget.name }}</h3>
+          <span class="badge">FY {{ budget.fiscalYear }}</span>
+        </header>
+        <p class="card__department" *ngIf="budget.department">{{ budget.department }}</p>
+        
+        <div class="card__amounts">
+          <div class="amount">
+            <small>Total Budget</small>
+            <span>{{ formatCurrency(budget.totalAmount) }}</span>
+          </div>
+          <div class="amount">
+            <small>Spent</small>
+            <span>{{ formatCurrency(budget.spentAmount) }}</span>
+          </div>
+          <div class="amount amount--remaining">
+            <small>Remaining</small>
+            <span>{{ formatCurrency(budget.remainingAmount) }}</span>
+          </div>
+        </div>
+
+        <div class="card__progress">
+          <div class="progress-bar">
+            <div 
+              class="progress-bar__fill" 
+              [class]="getUtilizationClass(budget)"
+              [style.width.%]="getUtilization(budget)">
+            </div>
+          </div>
+          <span class="progress-label" [class]="getUtilizationClass(budget)">
+            {{ getUtilization(budget) | number:'1.1-1' }}% utilized
+          </span>
+        </div>
+
+        <div class="card__dates">
+          <span>{{ budget.startDate | date:'mediumDate' }} – {{ budget.endDate | date:'mediumDate' }}</span>
+        </div>
+
+        <section class="card__lines" *ngIf="budget.lines?.length">
+          <h4>Budget Lines</h4>
+          <ul>
+            <li *ngFor="let line of budget.lines">
+              <span class="line-category">{{ line.category }}</span>
+              <span class="line-amounts">
+                {{ formatCurrency(line.spentAmount) }} / {{ formatCurrency(line.allocatedAmount) }}
+              </span>
+            </li>
+          </ul>
+        </section>
+
+        <p class="card__notes" *ngIf="budget.notes">{{ budget.notes }}</p>
+
+        <div class="card__actions">
+          <button type="button" class="btn btn--sm btn--secondary" (click)="openEditDialog(budget)">Edit</button>
+          <button type="button" class="btn btn--sm btn--danger" (click)="openDeleteDialog(budget)">Delete</button>
+        </div>
+      </article>
+    </div>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading budgets…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="panel__status panel__status--muted">
+      No budgets were found.
+      <button type="button" class="btn btn--link" (click)="openCreateDialog()">Create your first budget</button>
+    </div>
+  </ng-template>
+</section>
+
+<!-- Create/Edit Dialog -->
+<div class="modal-backdrop" *ngIf="formVisible()" (click)="closeDialog()">
+  <div class="modal modal--lg" (click)="$event.stopPropagation()">
+    <header class="modal__header">
+      <h3>{{ formMode() === 'create' ? 'Create Budget' : 'Edit Budget' }}</h3>
+      <button class="modal__close" (click)="closeDialog()">×</button>
+    </header>
+    <form [formGroup]="budgetForm" (ngSubmit)="submitForm()">
+      <div class="modal__body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Budget Name *</label>
+            <input type="text" id="name" formControlName="name" placeholder="e.g., IT Infrastructure Budget">
+            <small class="error" *ngIf="budgetForm.get('name')?.touched && budgetForm.get('name')?.invalid">
+              Budget name is required
+            </small>
+          </div>
+          <div class="form-group">
+            <label for="department">Department</label>
+            <input type="text" id="department" formControlName="department" placeholder="e.g., IT, HR, Marketing">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fiscalYear">Fiscal Year *</label>
+            <input type="number" id="fiscalYear" formControlName="fiscalYear" min="2000" max="3000">
+          </div>
+          <div class="form-group">
+            <label for="startDate">Start Date *</label>
+            <input type="date" id="startDate" formControlName="startDate">
+          </div>
+          <div class="form-group">
+            <label for="endDate">End Date *</label>
+            <input type="date" id="endDate" formControlName="endDate">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="totalAmount">Total Amount *</label>
+            <input type="number" id="totalAmount" formControlName="totalAmount" min="0" step="0.01">
+          </div>
+          <div class="form-group">
+            <label for="spentAmount">Spent Amount</label>
+            <input type="number" id="spentAmount" formControlName="spentAmount" min="0" step="0.01">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="notes">Notes</label>
+          <textarea id="notes" formControlName="notes" rows="2" placeholder="Optional notes..."></textarea>
+        </div>
+
+        <!-- Budget Lines -->
+        <div class="form-section">
+          <div class="form-section__header">
+            <h4>Budget Lines</h4>
+            <button type="button" class="btn btn--sm btn--secondary" (click)="addLine()">+ Add Line</button>
+          </div>
+          <div formArrayName="lines">
+            <div class="line-row" *ngFor="let line of linesFormArray.controls; let i = index" [formGroupName]="i">
+              <input type="text" formControlName="category" placeholder="Category *">
+              <input type="number" formControlName="allocatedAmount" placeholder="Allocated" min="0" step="0.01">
+              <input type="number" formControlName="spentAmount" placeholder="Spent" min="0" step="0.01">
+              <input type="text" formControlName="notes" placeholder="Notes">
+              <button type="button" class="btn btn--sm btn--danger" (click)="removeLine(i)">×</button>
+            </div>
+            <p class="no-lines" *ngIf="linesFormArray.length === 0">No budget lines added.</p>
+          </div>
+        </div>
+      </div>
+      <footer class="modal__footer">
+        <button type="button" class="btn btn--secondary" (click)="closeDialog()">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="formSubmitting()">
+          {{ formSubmitting() ? 'Saving…' : (formMode() === 'create' ? 'Create Budget' : 'Save Changes') }}
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Confirmation Dialog -->
+<div class="modal-backdrop" *ngIf="deleteDialogVisible()" (click)="closeDeleteDialog()">
+  <div class="modal modal--sm" (click)="$event.stopPropagation()">
+    <header class="modal__header">
+      <h3>Delete Budget</h3>
+      <button class="modal__close" (click)="closeDeleteDialog()">×</button>
+    </header>
+    <div class="modal__body">
+      <p>Are you sure you want to delete <strong>{{ budgetToDelete()?.name }}</strong>?</p>
+      <p class="text-muted">This action cannot be undone.</p>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--secondary" (click)="closeDeleteDialog()">Cancel</button>
+      <button type="button" class="btn btn--danger" (click)="confirmDelete()" [disabled]="deleteSubmitting()">
+        {{ deleteSubmitting() ? 'Deleting…' : 'Delete Budget' }}
+      </button>
+    </footer>
+  </div>
+</div>
