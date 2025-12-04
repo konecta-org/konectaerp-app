@@ -2,31 +2,27 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FinanceService.Dtos
 {
-    public class PayrollEntryResponseDto
-    {
-        public int Id { get; set; }
-        public string EmployeeId { get; set; } = default!;
-        public string EmployeeName { get; set; } = default!;
-        public decimal GrossPay { get; set; }
-        public decimal NetPay { get; set; }
-        public decimal Deductions { get; set; }
-        public decimal Taxes { get; set; }
-        public string? Notes { get; set; }
-    }
+    public record PayrollEntryResponseDto(
+        int Id,
+        string EmployeeId,
+        string EmployeeName,
+        decimal GrossPay,
+        decimal NetPay,
+        decimal Deductions,
+        decimal Taxes,
+        string? Notes);
 
-    public class PayrollRunResponseDto
-    {
-        public int Id { get; set; }
-        public string PayrollNumber { get; set; } = default!;
-        public DateTime PeriodStart { get; set; }
-        public DateTime PeriodEnd { get; set; }
-        public DateTime PaymentDate { get; set; }
-        public string Status { get; set; } = default!;
-        public decimal TotalGrossPay { get; set; }
-        public decimal TotalNetPay { get; set; }
-        public string? Notes { get; set; }
-        public IEnumerable<PayrollEntryResponseDto> Entries { get; set; } = new List<PayrollEntryResponseDto>();
-    }
+    public record PayrollRunResponseDto(
+        int Id,
+        string PayrollNumber,
+        DateTime PeriodStart,
+        DateTime PeriodEnd,
+        DateTime PaymentDate,
+        string Status,
+        decimal TotalGrossPay,
+        decimal TotalNetPay,
+        string? Notes,
+        IEnumerable<PayrollEntryResponseDto> Entries);
 
     public class PayrollEntryUpsertDto
     {

@@ -2,19 +2,17 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FinanceService.Dtos
 {
-    public class ExpenseResponseDto
-    {
-        public int Id { get; set; }
-        public string ExpenseNumber { get; set; } = default!;
-        public string Category { get; set; } = default!;
-        public string? Vendor { get; set; }
-        public string Description { get; set; } = default!;
-        public DateTime IncurredOn { get; set; }
-        public string Status { get; set; } = default!;
-        public string PaymentMethod { get; set; } = default!;
-        public decimal Amount { get; set; }
-        public string? Notes { get; set; }
-    }
+    public record ExpenseResponseDto(
+        int Id,
+        string ExpenseNumber,
+        string Category,
+        string? Vendor,
+        string Description,
+        DateTime IncurredOn,
+        string Status,
+        string PaymentMethod,
+        decimal Amount,
+        string? Notes);
 
     public class ExpenseUpsertDto
     {
