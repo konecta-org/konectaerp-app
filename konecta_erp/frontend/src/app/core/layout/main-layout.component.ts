@@ -15,8 +15,14 @@ export class MainLayoutComponent {
   private readonly router = inject(Router);
 
   readonly currentUser = computed(() => this.auth.currentSession());
+  isUserMenuOpen = false;
+
+  toggleUserMenu(): void {
+    this.isUserMenuOpen = !this.isUserMenuOpen;
+  }
 
   logout(): void {
+    this.isUserMenuOpen = false;
     this.auth.logout();
     this.router.navigate(['/auth/login']);
   }
