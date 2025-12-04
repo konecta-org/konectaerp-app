@@ -1,47 +1,374 @@
-<section class="panel">
-  <header class="panel__header">
-    <div>
-      <h2>Attendance Records</h2>
-      <p>Monitor daily check-ins, check-outs, and attendance status.</p>
+<div class="hr-attendance">
+  <header class="hr-attendance__header">
+    <div class="hr-attendance__title">
+      <h2>Attendance</h2>
+      <p>Mark your presence and review attendance history.</p>
     </div>
-    <button type="button" (click)="reload()" [disabled]="loading()">
-      {{ loading() ? 'Refreshing…' : 'Refresh' }}
-    </button>
+    <div class="hr-attendance__actions">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-check"
+        label="Attended"
+        class="action-button"
+        severity="primary"
+        (click)="openAttendDialog()"
+        [pTooltip]=
+          "currentEmployeeLoading()
+            ? 'Loading your employee profile…'
+            : currentEmployeeError() ?? 'Record today\'s attendance'"
+        tooltipPosition="bottom"
+      ></button>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-refresh"
+        label="Refresh"
+        class="action-button"
+        severity="secondary"
+        (click)="reload()"
+        [loading]="loading()"
+      ></button>
+    </div>
   </header>
 
-  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
-    <table *ngIf="records().length > 0; else emptyState">
-      <thead>
-        <tr>
-          <th>Employee</th>
-          <th>Date</th>
-          <th>Check-in</th>
-          <th>Check-out</th>
-          <th>Status</th>
-          <th>Notes</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let record of records(); trackBy: trackById">
-          <td>{{ record.employeeName }}</td>
-          <td>{{ record.workDate | date: 'mediumDate' }}</td>
-          <td>{{ record.checkInTime ? (record.checkInTime | date: 'shortTime') : '—' }}</td>
-          <td>{{ record.checkOutTime ? (record.checkOutTime | date: 'shortTime') : '—' }}</td>
-          <td>
-            <span class="status status--{{ record.status | lowercase }}">{{ record.status }}</span>
-          </td>
-          <td>{{ record.notes || '—' }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <p-message
+    *ngIf="feedback(); else errorBlock"
+    severity="success"
+    [text]="feedback()!"
+    class="hr-attendance__message"
+    (onClose)="clearFeedback()"
+    [closable]="true"
+  ></p-message>
+
+  <ng-template #errorBlock>
+    <p-message *ngIf="error()" severity="error" [text]="error()!" class="hr-attendance__message"></p-message>
+  </ng-template>
+
+  <ng-container *ngIf="!loading(); else loadingState">
+    <ng-container *ngIf="!error(); else errorState">
+      <ng-container *ngIf="hasRecords(); else emptyState">
+        <div class="hr-attendance__layout">
+          <div class="hr-attendance__table">
+            <p-table [value]="records()" dataKey="id" [rowHover]="true">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Employee</th>
+                  <th>Work date</th>
+                  <th>Check-in</th>
+                  <th>Check-out</th>
+                  <th class="notes-column">Notes</th>
+                  <th class="actions-column">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-record>
+                <tr
+                  (click)="viewRecord(record)"
+                  [class.row-selected]="selectedRecord()?.id === record.id"
+                >
+                  <td>
+                    <div class="cell-main">
+                      <span class="cell-main__title">{{ record.employeeName }}</span>
+                      <small>{{ record.workDate | date: 'EEEE' }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="cell-date">
+                      <span>{{ record.workDate | date: 'mediumDate' }}</span>
+                      <small>{{ record.workDate | date: 'shortTime' }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="cell-date">
+                      <span>{{ record.checkInTime ? (record.checkInTime | date: 'shortTime') : '—' }}</span>
+                      <small *ngIf="record.checkInTime">Recorded</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="cell-date">
+                      <span>{{ record.checkOutTime ? (record.checkOutTime | date: 'shortTime') : '—' }}</span>
+                      <small *ngIf="record.checkOutTime">Recorded</small>
+                    </div>
+                  </td>
+                  <td class="notes-column">
+                    {{
+                      record.notes
+                        ? (record.notes.length > 90 ? (record.notes | slice: 0:90) + '…' : record.notes)
+                        : '—'
+                    }}
+                  </td>
+                  <td class="actions-column">
+                    <div class="action-chip-group">
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-sign-out"
+                        label="Check out"
+                        class="action-chip"
+                        severity="primary"
+                        (click)="openCheckoutDialog(record, $event)"
+                        [pTooltip]="checkoutTooltip(record)"
+                        tooltipPosition="bottom"
+                      ></button>
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6">
+                    <div class="hr-attendance__state">No attendance records were returned.</div>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <p-card class="hr-attendance__details" *ngIf="detailVisible() && selectedRecord() as record">
+            <ng-template pTemplate="content">
+              <div class="interview-details">
+                <header class="interview-details__header">
+                  <div class="interview-details__identity">
+                    <h3 class="interview-details__title">{{ record.employeeName }}</h3>
+                    <p class="interview-details__subtitle">{{ record.workDate | date: 'fullDate' }}</p>
+                  </div>
+                  <div class="interview-details__header-actions">
+                    <p-tag
+                      class="interview-details__status"
+                      [value]="attendanceStatusLabel(record.status)"
+                      [severity]="attendanceStatusSeverity(record.status)"
+                    ></p-tag>
+                    <button
+                      pButton
+                      type="button"
+                      icon="pi pi-times"
+                      class="interview-details__close"
+                      severity="secondary"
+                      (click)="closeDetails()"
+                    ></button>
+                  </div>
+                </header>
+
+                <section class="interview-details__section">
+                  <h4 class="interview-details__label">Overview</h4>
+                  <div class="interview-details__grid">
+                    <div class="interview-details__item">
+                      <span class="interview-details__item-label">Work date</span>
+                      <span class="interview-details__item-value">{{ record.workDate | date: 'fullDate' }}</span>
+                    </div>
+                    <div class="interview-details__item">
+                      <span class="interview-details__item-label">Status</span>
+                      <span class="interview-details__item-value">{{ attendanceStatusLabel(record.status) }}</span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="interview-details__section">
+                  <h4 class="interview-details__label">Timing</h4>
+                  <div class="interview-details__grid">
+                    <div class="interview-details__item">
+                      <span class="interview-details__item-label">Check-in</span>
+                      <span class="interview-details__item-value">
+                        {{ record.checkInTime ? (record.checkInTime | date: 'medium') : 'Not recorded' }}
+                      </span>
+                    </div>
+                    <div class="interview-details__item">
+                      <span class="interview-details__item-label">Check-out</span>
+                      <span class="interview-details__item-value">
+                        {{ record.checkOutTime ? (record.checkOutTime | date: 'medium') : 'Not recorded' }}
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="interview-details__section">
+                  <h4 class="interview-details__label">Notes</h4>
+                  <p class="interview-details__paragraph">{{ record.notes || 'No notes provided.' }}</p>
+                </section>
+              </div>
+            </ng-template>
+          </p-card>
+        </div>
+      </ng-container>
+    </ng-container>
   </ng-container>
 
-  <ng-template #stateTemplate>
-    <div class="panel__status" *ngIf="loading()">Loading attendance…</div>
-    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  <ng-template #loadingState>
+    <div class="hr-attendance__state">Loading attendance…</div>
+  </ng-template>
+
+  <ng-template #errorState>
+    <div class="hr-attendance__state hr-attendance__state--error">{{ error() }}</div>
   </ng-template>
 
   <ng-template #emptyState>
-    <div class="panel__status panel__status--muted">No attendance records were returned.</div>
+    <div class="hr-attendance__empty">
+      <h3>No attendance records yet</h3>
+      <p>Attendance submissions will appear here once recorded.</p>
+    </div>
   </ng-template>
-</section>
+
+  <p-dialog
+    [visible]="formVisible()"
+    [modal]="true"
+    [style]="{ width: '520px' }"
+    [draggable]="false"
+    [closable]="!formSubmitting()"
+    (onHide)="closeFormDialog()"
+    [dismissableMask]="false"
+    class="attendance-dialog"
+    header="Record attendance"
+  >
+    <form
+      id="attendanceForm"
+      [formGroup]="attendanceForm"
+      class="attendance-form"
+      (ngSubmit)="submitAttendance()"
+    >
+      <div class="attendance-form__field">
+        <label>Employee</label>
+        <ng-container *ngIf="!employeeSelectVisible(); else employeePicker">
+          <div class="attendance-form__employee" [class.attendance-form__employee--error]="!!currentEmployeeError()">
+            <span>{{ formEmployeeName() || 'Employee unavailable' }}</span>
+            <small *ngIf="!currentEmployeeError()">Automatically assigned to you.</small>
+          </div>
+          <input type="hidden" formControlName="employeeId" />
+          <div class="form-error" *ngIf="currentEmployeeError()">{{ currentEmployeeError() }}</div>
+        </ng-container>
+        <ng-template #employeePicker>
+          <p-select
+            inputId="attendanceEmployee"
+            formControlName="employeeId"
+            [options]="employeeOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [filter]="true"
+            placeholder="Select employee"
+            appendTo="body"
+            [panelStyleClass]="'attendance-select-panel'"
+          ></p-select>
+          <div class="form-error" *ngIf="controlInvalid('employeeId')">Employee selection is required.</div>
+        </ng-template>
+      </div>
+
+      <div class="attendance-form__grid">
+        <div class="attendance-form__field">
+          <label for="attendanceDate">Work date</label>
+          <p-datePicker
+            inputId="attendanceDate"
+            formControlName="workDate"
+            [showIcon]="true"
+            [maxDate]="today"
+            appendTo="body"
+          ></p-datePicker>
+          <div class="form-error" *ngIf="controlInvalid('workDate')">Work date is required.</div>
+        </div>
+        <div class="attendance-form__field">
+          <label for="attendanceStatus">Status</label>
+          <p-select
+            inputId="attendanceStatus"
+            formControlName="status"
+            [options]="attendanceStatusOptions"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            [panelStyleClass]="'attendance-select-panel'"
+          ></p-select>
+        </div>
+      </div>
+
+      <div class="attendance-form__field">
+        <label for="attendanceNotes">Notes (optional)</label>
+        <textarea
+          id="attendanceNotes"
+          pTextarea
+          formControlName="notes"
+          rows="4"
+          maxlength="1000"
+          placeholder="Add context such as remote work or schedule adjustments"
+          autoResize
+        ></textarea>
+        <small class="field-hint">Optional · Maximum 1,000 characters.</small>
+      </div>
+    </form>
+    <ng-template pTemplate="footer">
+      <div class="attendance-form__footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          class="action-button"
+          severity="secondary"
+          (click)="closeFormDialog()"
+          [disabled]="formSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="submit"
+          label="Save attendance"
+          severity="primary"
+          [loading]="formSubmitting()"
+          form="attendanceForm"
+          class="action-button"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    [visible]="checkoutDialogVisible()"
+    [modal]="true"
+    [style]="{ width: '420px' }"
+    [draggable]="false"
+    [closable]="!checkoutSubmitting()"
+    (onHide)="closeCheckoutDialog()"
+    [dismissableMask]="false"
+    class="checkout-dialog"
+    header="Set check-out time"
+  >
+    <form
+      id="checkoutForm"
+      [formGroup]="checkoutForm"
+      class="checkout-form"
+      (ngSubmit)="submitCheckoutForm()"
+    >
+      <div class="checkout-form__field">
+        <label for="checkoutTime">Check-out time</label>
+        <p-datePicker
+          inputId="checkoutTime"
+          formControlName="checkOutTime"
+          [showIcon]="true"
+          [showTime]="true"
+          hourFormat="24"
+          appendTo="body"
+        ></p-datePicker>
+        <div class="form-error" *ngIf="checkoutForm.controls.checkOutTime.invalid && checkoutForm.controls.checkOutTime.touched">
+          Check-out time is required.
+        </div>
+        <small class="field-hint">Select the time you ended your work day.</small>
+      </div>
+    </form>
+    <ng-template pTemplate="footer">
+      <div class="checkout-form__footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          class="action-button"
+          severity="secondary"
+          (click)="closeCheckoutDialog()"
+          [disabled]="checkoutSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="submit"
+          label="Save"
+          severity="primary"
+          [loading]="checkoutSubmitting()"
+          form="checkoutForm"
+          class="action-button"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</div>

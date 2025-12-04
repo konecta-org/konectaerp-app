@@ -151,6 +151,23 @@ export interface AttendanceRecordDto {
   notes?: string;
 }
 
+export interface CreateAttendanceRecordRequest {
+  employeeId: string;
+  workDate: string;
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
+  status?: string | number;
+  notes?: string | null;
+}
+
+export interface UpdateAttendanceRecordRequest {
+  id: string;
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
+  status: string | number;
+  notes?: string | null;
+}
+
 export interface LeaveRequestDto {
   id: string;
   employeeId: string;
@@ -378,6 +395,14 @@ export class HrApiService {
   getAttendance(params?: { employeeId?: string; startDate?: string; endDate?: string }): Observable<AttendanceRecordDto[]> {
     const httpParams = this.createParams(params);
     return this.http.get<AttendanceRecordDto[]>(`${this.baseUrl}/Attendance`, { params: httpParams });
+  }
+
+  createAttendanceRecord(request: CreateAttendanceRecordRequest): Observable<AttendanceRecordDto> {
+    return this.http.post<AttendanceRecordDto>(`${this.baseUrl}/Attendance`, request);
+  }
+
+  updateAttendanceRecord(id: string, request: UpdateAttendanceRecordRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/Attendance/${id}`, request);
   }
 
   getLeaveRequests(params?: { employeeId?: string; pendingOnly?: boolean }): Observable<LeaveRequestDto[]> {
