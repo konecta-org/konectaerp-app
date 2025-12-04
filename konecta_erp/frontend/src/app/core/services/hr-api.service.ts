@@ -181,6 +181,23 @@ export interface JobOpeningDto {
   createdAt: string;
 }
 
+export interface CreateJobOpeningRequest {
+  title: string;
+  description?: string;
+  requirements?: string;
+  location?: string;
+  employmentType?: number | string;
+  salaryMin?: number;
+  salaryMax?: number;
+  departmentId?: string | null;
+  closingDate?: string | null;
+  status?: number | string;
+}
+
+export interface UpdateJobOpeningRequest extends CreateJobOpeningRequest {
+  id: string;
+}
+
 export interface JobApplicationDto {
   id: string;
   jobOpeningId: string;
@@ -193,26 +210,95 @@ export interface JobApplicationDto {
   status: string;
   appliedAt: string;
   updatedAt?: string;
+  interviews?: InterviewDto[];
+}
+
+export interface CreateJobApplicationRequest {
+  jobOpeningId: string;
+  candidateName: string;
+  candidateEmail: string;
+  candidatePhone?: string | null;
+  resumeUrl?: string | null;
+  coverLetter?: string | null;
+}
+
+export interface UpdateJobApplicationRequest extends CreateJobApplicationRequest {
+  id: string;
+  status: number | string;
 }
 
 export interface InterviewDto {
   id: string;
-  scheduledAt: string;
-  interviewerName?: string;
-  interviewType?: string;
-  status: string;
   jobApplicationId: string;
+  candidateName?: string;
   jobApplicationTitle?: string;
-  notes?: string;
+  interviewerEmployeeId?: string | null;
+  interviewerName?: string | null;
+  scheduledAt: string;
+  mode?: string | number | null;
+  status: string;
+  location?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string | null;
+  interviewType?: string | null;
+}
+
+export interface ScheduleInterviewRequest {
+  jobApplicationId: string;
+  interviewerEmployeeId?: string | null;
+  scheduledAt: string;
+  mode?: number | string;
+  location?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateInterviewRequest {
+  id: string;
+  interviewerEmployeeId?: string | null;
+  scheduledAt: string;
+  mode?: number | string;
+  location?: string | null;
+  status?: number | string;
+  notes?: string | null;
 }
 
 export interface ResignationRequestDto {
   id: string;
   employeeId: string;
   employeeName: string;
-  submittedAt: string;
-  lastWorkingDay: string;
+  employeeEmail?: string;
+  requestedAt?: string;
+  submittedAt?: string;
+  effectiveDate?: string;
+  lastWorkingDay?: string;
+  reason?: string | null;
   status: string;
+  decidedAt?: string | null;
+  decisionNotes?: string | null;
+  approvedByEmployeeId?: string | null;
+  approvedByName?: string | null;
+  eligibleForRehire?: boolean | null;
+}
+
+export interface ReviewResignationRequest {
+  id: string;
+  decision: number;
+  decisionNotes?: string | null;
+  approvedByEmployeeId?: string | null;
+  eligibleForRehire?: boolean | null;
+}
+
+export interface SubmitResignationRequest {
+  employeeId: string;
+  effectiveDate: string;
+  reason?: string | null;
+}
+
+export interface UpdateResignationRequest {
+  id: string;
+  effectiveDate: string;
+  reason?: string | null;
 }
 
 @Injectable({
@@ -292,9 +378,33 @@ export class HrApiService {
     return this.http.get<JobOpeningDto[]>(`${this.baseUrl}/JobOpenings`, { params: httpParams });
   }
 
+  createJobOpening(request: CreateJobOpeningRequest): Observable<JobOpeningDto> {
+    return this.http.post<JobOpeningDto>(`${this.baseUrl}/JobOpenings`, request);
+  }
+
+  updateJobOpening(id: string, request: UpdateJobOpeningRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/JobOpenings/${id}`, request);
+  }
+
+  deleteJobOpening(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/JobOpenings/${id}`);
+  }
+
   getJobApplications(params?: { jobOpeningId?: string }): Observable<JobApplicationDto[]> {
     const httpParams = this.createParams({ jobOpeningId: params?.jobOpeningId });
     return this.http.get<JobApplicationDto[]>(`${this.baseUrl}/JobApplications`, { params: httpParams });
+  }
+
+  createJobApplication(request: CreateJobApplicationRequest): Observable<JobApplicationDto> {
+    return this.http.post<JobApplicationDto>(`${this.baseUrl}/JobApplications`, request);
+  }
+
+  updateJobApplication(id: string, request: UpdateJobApplicationRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/JobApplications/${id}`, request);
+  }
+
+  deleteJobApplication(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/JobApplications/${id}`);
   }
 
   getInterviews(params?: { jobApplicationId?: string }): Observable<InterviewDto[]> {
@@ -302,9 +412,33 @@ export class HrApiService {
     return this.http.get<InterviewDto[]>(`${this.baseUrl}/Interviews`, { params: httpParams });
   }
 
+  scheduleInterview(request: ScheduleInterviewRequest): Observable<InterviewDto> {
+    return this.http.post<InterviewDto>(`${this.baseUrl}/Interviews`, request);
+  }
+
+  updateInterview(id: string, request: UpdateInterviewRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/Interviews/${id}`, request);
+  }
+
+  deleteInterview(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/Interviews/${id}`);
+  }
+
   getResignations(params?: { status?: string }): Observable<ResignationRequestDto[]> {
     const httpParams = this.createParams({ status: params?.status });
     return this.http.get<ResignationRequestDto[]>(`${this.baseUrl}/ResignationRequests`, { params: httpParams });
+  }
+
+  decideResignation(id: string, request: ReviewResignationRequest): Observable<ResignationRequestDto> {
+    return this.http.put<ResignationRequestDto>(`${this.baseUrl}/ResignationRequests/${id}/decision`, request);
+  }
+
+  submitResignation(request: SubmitResignationRequest): Observable<ResignationRequestDto> {
+    return this.http.post<ResignationRequestDto>(`${this.baseUrl}/ResignationRequests`, request);
+  }
+
+  updateResignation(id: string, request: UpdateResignationRequest): Observable<ResignationRequestDto> {
+    return this.http.put<ResignationRequestDto>(`${this.baseUrl}/ResignationRequests/${id}`, request);
   }
 
   private createParams(params?: Record<string, string | undefined>): HttpParams | undefined {

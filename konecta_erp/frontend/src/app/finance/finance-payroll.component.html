@@ -37,7 +37,7 @@
             </div>
           </td>
           <td>{{ run.paymentDate | date:'mediumDate' }}</td>
-          <td class="employee-count">{{ run.entries?.length || 0 }}</td>
+          <td class="employee-count">{{ run.entries.length || 0 }}</td>
           <td class="amount">{{ formatCurrency(run.totalGrossPay) }}</td>
           <td class="amount amount--net">{{ formatCurrency(run.totalNetPay) }}</td>
           <td>
