@@ -95,7 +95,7 @@
               <ng-template pTemplate="body" let-resignation>
                 <tr
                   (click)="viewResignation(resignation)"
-                  [class.is-selected]="selectedResignation()?.id === resignation.id"
+                  [class.row-selected]="selectedResignation()?.id === resignation.id"
                 >
                   <td>
                     <div class="cell-main">
@@ -131,7 +131,7 @@
                       [severity]="rehireSeverity(resignation.eligibleForRehire)"
                     ></p-tag>
                   </td>
-                  <td class="actions-column">
+                  <td class="actions-column table-actions" (click)="$event.stopPropagation()">
                     <div class="action-chip-group">
                       <button
                         pButton
@@ -143,7 +143,7 @@
                         severity="secondary"
                         pTooltip="View details"
                         tooltipPosition="bottom"
-                        (click)="viewResignation(resignation); $event.stopPropagation()"
+                        (click)="viewResignation(resignation)"
                       ></button>
                       <button
                         pButton

@@ -1,53 +1,477 @@
-<section class="panel">
-  <header class="panel__header">
-    <div>
+<div class="hr-leaves">
+  <header class="hr-leaves__header">
+    <div class="hr-leaves__title">
       <h2>Leave Requests</h2>
-      <p>Review employee leave submissions and their approval status.</p>
+      <p>Monitor planned absences, approval status, and supporting notes.</p>
     </div>
-    <div class="panel__actions">
-      <label class="pending-toggle">
-        <input type="checkbox" [checked]="pendingOnly()" (change)="togglePending()" />
-        Pending only
-      </label>
-      <button type="button" (click)="reload()" [disabled]="loading()">
-        {{ loading() ? 'Refreshing…' : 'Refresh' }}
-      </button>
+    <div class="hr-leaves__actions">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-plus"
+        label="Record leave"
+        class="action-button"
+        severity="primary"
+        (click)="openCreateDialog()"
+        [pTooltip]="
+          !canManageLeaves()
+            ? 'Requires ' + managePermissionLabel
+            : currentEmployeeLoading()
+              ? 'Loading your employee profile…'
+              : currentEmployeeError() ?? 'Add new leave request'
+        "
+        tooltipPosition="bottom"
+      ></button>
+      <div class="hr-leaves__toggle">
+        <p-inputSwitch
+          [(ngModel)]="pendingFilterValue"
+          [ngModelOptions]="{ standalone: true }"
+          inputId="pendingSwitch"
+        ></p-inputSwitch>
+        <label for="pendingSwitch">Show pending only</label>
+      </div>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-refresh"
+        label="Refresh"
+        class="action-button"
+        severity="secondary"
+        (click)="reload()"
+        [loading]="loading()"
+      ></button>
     </div>
   </header>
 
-  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
-    <table *ngIf="leaves().length > 0; else emptyState">
-      <thead>
-        <tr>
-          <th>Employee</th>
-          <th>Type</th>
-          <th>Start</th>
-          <th>End</th>
-          <th>Status</th>
-          <th>Requested</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let leave of leaves(); trackBy: trackById">
-          <td>{{ leave.employeeName }}</td>
-          <td>{{ leave.leaveType }}</td>
-          <td>{{ leave.startDate | date: 'mediumDate' }}</td>
-          <td>{{ leave.endDate | date: 'mediumDate' }}</td>
-          <td>
-            <span class="status status--{{ leave.status | lowercase }}">{{ leave.status }}</span>
-          </td>
-          <td>{{ leave.createdAt | date: 'medium' }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <p-message
+    *ngIf="feedback(); else errorBlock"
+    severity="success"
+    [text]="feedback()!"
+    class="hr-leaves__message"
+    (onClose)="clearFeedback()"
+    [closable]="true"
+  ></p-message>
+
+  <ng-template #errorBlock>
+    <p-message *ngIf="error()" severity="error" [text]="error()!" class="hr-leaves__message"></p-message>
+  </ng-template>
+
+  <ng-container *ngIf="!loading(); else loadingState">
+    <ng-container *ngIf="!error(); else errorState">
+      <ng-container *ngIf="hasLeaves(); else emptyState">
+        <div class="hr-leaves__layout">
+          <div class="hr-leaves__table">
+            <p-table [value]="leaves()" dataKey="id" [rowHover]="true">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Employee</th>
+                  <th>Leave window</th>
+                  <th>Status</th>
+                  <th>Requested</th>
+                  <th>Manager</th>
+                  <th class="actions-column">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-leave>
+                <tr
+                  (click)="viewLeave(leave)"
+                  [class.row-selected]="selectedLeave()?.id === leave.id"
+                >
+                  <td>
+                    <div class="cell-main">
+                      <span class="cell-main__title">{{ leave.employeeName }}</span>
+                      <small *ngIf="leave.reason">{{ leave.reason }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="cell-window">
+                      <span>{{ leave.startDate | date: 'mediumDate' }} → {{ leave.endDate | date: 'mediumDate' }}</span>
+                      <small>{{ leave.leaveType }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <p-tag
+                      [value]="leaveStatusLabel(leave.status)"
+                      [severity]="leaveStatusSeverity(leave.status)"
+                    ></p-tag>
+                  </td>
+                  <td>
+                    <div class="cell-date">
+                      <span>{{ leave.requestedAt | date: 'mediumDate' }}</span>
+                      <small>{{ leave.requestedAt | date: 'shortTime' }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="manager-name" *ngIf="leave.approvedByName; else noManager">{{ leave.approvedByName }}</span>
+                    <ng-template #noManager><span class="manager-name manager-name--muted">Pending assignment</span></ng-template>
+                  </td>
+                  <td class="actions-column">
+                    <div class="action-chip-group">
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-pencil"
+                        label="Edit"
+                        class="action-chip"
+                        severity="help"
+                        [disabled]="!canManageLeaves()"
+                        [ngClass]="actionLockClass(!canManageLeaves())"
+                        [pTooltip]="canManageLeaves() ? 'Edit leave request' : 'Requires ' + managePermissionLabel"
+                        tooltipPosition="bottom"
+                        (click)="openEditDialog(leave, $event)"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-check"
+                        label="Approve"
+                        class="action-chip"
+                        severity="success"
+                        [disabled]="!canManageLeaves()"
+                        [ngClass]="actionLockClass(!canManageLeaves())"
+                        [pTooltip]="statusTooltip(leave, 'Approved')"
+                        tooltipPosition="bottom"
+                        (click)="setStatus(leave, 'Approved', $event)"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-times"
+                        label="Reject"
+                        class="action-chip"
+                        severity="danger"
+                        [disabled]="!canManageLeaves()"
+                        [ngClass]="actionLockClass(!canManageLeaves())"
+                        [pTooltip]="statusTooltip(leave, 'Rejected')"
+                        tooltipPosition="bottom"
+                        (click)="setStatus(leave, 'Rejected', $event)"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-ban"
+                        label="Cancel"
+                        class="action-chip"
+                        severity="secondary"
+                        [disabled]="!canManageLeaves()"
+                        [ngClass]="actionLockClass(!canManageLeaves())"
+                        [pTooltip]="statusTooltip(leave, 'Cancelled')"
+                        tooltipPosition="bottom"
+                        (click)="setStatus(leave, 'Cancelled', $event)"
+                      ></button>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-trash"
+                        label="Delete"
+                        class="action-chip"
+                        severity="danger"
+                        [disabled]="!canDeleteLeaves()"
+                        [ngClass]="actionLockClass(!canDeleteLeaves())"
+                        [pTooltip]="deleteTooltip()"
+                        tooltipPosition="bottom"
+                        (click)="openDeleteDialog(leave, $event)"
+                      ></button>
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6">
+                    <div class="hr-leaves__state">No leave requests were returned.</div>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <p-card class="hr-leaves__details" *ngIf="detailVisible() && selectedLeave() as leave">
+            <ng-template pTemplate="content">
+              <div class="interview-details">
+                <header class="interview-details__header">
+                  <div class="interview-details__identity">
+                    <h3 class="interview-details__title">{{ leave.employeeName }}</h3>
+                    <p class="interview-details__subtitle">
+                      {{ leave.leaveType }} · {{ leave.startDate | date: 'mediumDate' }} → {{ leave.endDate | date: 'mediumDate' }}
+                    </p>
+                  </div>
+                  <p-tag
+                    class="interview-details__status"
+                    [value]="leaveStatusLabel(leave.status)"
+                    [severity]="leaveStatusSeverity(leave.status)"
+                  ></p-tag>
+                </header>
+
+                <section class="interview-details__section">
+                  <h4 class="interview-details__label">Overview</h4>
+                  <div class="interview-details__grid">
+                    <div class="interview-details__item">
+                      <span class="interview-details__item-label">Leave window</span>
+                      <span class="interview-details__item-value">
+                        {{ leave.startDate | date: 'mediumDate' }} → {{ leave.endDate | date: 'mediumDate' }}
+                      </span>
+                    </div>
+                    <div class="interview-details__item">
+                      <span class="interview-details__item-label">Leave type</span>
+                      <span class="interview-details__item-value">{{ leave.leaveType }}</span>
+                    </div>
+                    <div class="interview-details__item">
+                      <span class="interview-details__item-label">Status</span>
+                      <span class="interview-details__item-value">{{ leaveStatusLabel(leave.status) }}</span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="interview-details__section">
+                  <h4 class="interview-details__label">Timeline</h4>
+                  <div class="interview-details__grid">
+                    <div class="interview-details__item">
+                      <span class="interview-details__item-label">Requested</span>
+                      <span class="interview-details__item-value">{{ leave.requestedAt | date: 'medium' }}</span>
+                    </div>
+                    <div class="interview-details__item">
+                      <span class="interview-details__item-label">Last updated</span>
+                      <span class="interview-details__item-value">
+                        {{ leave.updatedAt ? (leave.updatedAt | date: 'medium') : 'Not updated' }}
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="interview-details__section">
+                  <h4 class="interview-details__label">Approval</h4>
+                  <div class="interview-details__grid">
+                    <div class="interview-details__item">
+                      <span class="interview-details__item-label">Approved by</span>
+                      <span class="interview-details__item-value">{{ leave.approvedByName || 'Pending assignment' }}</span>
+                    </div>
+                    <div class="interview-details__item">
+                      <span class="interview-details__item-label">Approver reference</span>
+                      <span class="interview-details__item-value">{{ leave.approvedByEmployeeId || 'Not assigned' }}</span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="interview-details__section">
+                  <h4 class="interview-details__label">Employee note</h4>
+                  <p class="interview-details__paragraph">{{ leave.reason || 'No additional notes provided.' }}</p>
+                </section>
+              </div>
+            </ng-template>
+
+          </p-card>
+        </div>
+      </ng-container>
+    </ng-container>
   </ng-container>
 
-  <ng-template #stateTemplate>
-    <div class="panel__status" *ngIf="loading()">Loading leave requests…</div>
-    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  <ng-template #loadingState>
+    <div class="hr-leaves__state">Loading leave requests…</div>
+  </ng-template>
+
+  <ng-template #errorState>
+    <div class="hr-leaves__state hr-leaves__state--error">{{ error() }}</div>
   </ng-template>
 
   <ng-template #emptyState>
-    <div class="panel__status panel__status--muted">No leave requests were returned.</div>
+    <div class="hr-leaves__empty">
+      <h3>No leave requests yet</h3>
+      <p>Employees have not submitted any leave requests for this period.</p>
+    </div>
   </ng-template>
-</section>
+
+  <p-dialog
+    [visible]="formVisible()"
+    [modal]="true"
+    [style]="{ width: '560px' }"
+    [draggable]="false"
+    [closable]="!formSubmitting()"
+    (onHide)="closeFormDialog()"
+    [dismissableMask]="false"
+    class="leave-dialog"
+    [header]="formMode() === 'create' ? 'Record leave request' : 'Edit leave request'"
+  >
+    <form
+      id="leaveForm"
+      [formGroup]="leaveForm"
+      class="leave-form"
+      (ngSubmit)="submitLeaveForm()"
+    >
+      <div class="leave-form__field">
+        <label>Employee</label>
+        <ng-container *ngIf="!employeeSelectVisible(); else employeePicker">
+          <div class="leave-form__employee" [class.leave-form__employee--error]="!!currentEmployeeError()">
+            <span>{{ formEmployeeName() || 'Employee unavailable' }}</span>
+            <small *ngIf="!currentEmployeeError() && formMode() === 'create'">Automatically assigned to you.</small>
+          </div>
+          <input type="hidden" formControlName="employeeId" />
+          <div class="form-error" *ngIf="currentEmployeeError()">{{ currentEmployeeError() }}</div>
+        </ng-container>
+        <ng-template #employeePicker>
+          <p-select
+            inputId="leaveEmployee"
+            formControlName="employeeId"
+            [options]="employeeOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [filter]="true"
+            placeholder="Select employee"
+            appendTo="body"
+            [panelStyleClass]="'leave-select-panel'"
+          ></p-select>
+          <div class="form-error" *ngIf="controlInvalid('employeeId')">Employee selection is required.</div>
+        </ng-template>
+      </div>
+
+      <div class="leave-form__grid">
+        <div class="leave-form__field">
+          <label for="leaveType">Leave type</label>
+          <p-select
+            inputId="leaveType"
+            formControlName="leaveType"
+            [options]="leaveTypeOptions"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            [panelStyleClass]="'leave-select-panel'"
+          ></p-select>
+        </div>
+        <div class="leave-form__field" *ngIf="formMode() === 'edit'">
+          <label for="leaveStatus">Status</label>
+          <p-select
+            inputId="leaveStatus"
+            formControlName="status"
+            [options]="leaveStatusOptions"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            [panelStyleClass]="'leave-select-panel'"
+          ></p-select>
+        </div>
+      </div>
+
+      <div class="leave-form__grid">
+        <div class="leave-form__field">
+          <label for="startDate">Start date</label>
+          <p-datePicker
+            inputId="startDate"
+            formControlName="startDate"
+            [showIcon]="true"
+            [minDate]="today"
+            dateFormat="yy-mm-dd"
+            appendTo="body"
+          ></p-datePicker>
+          <div class="form-error" *ngIf="controlInvalid('startDate')">Start date is required.</div>
+        </div>
+        <div class="leave-form__field">
+          <label for="endDate">End date</label>
+          <p-datePicker
+            inputId="endDate"
+            formControlName="endDate"
+            [showIcon]="true"
+            [minDate]="today"
+            dateFormat="yy-mm-dd"
+            appendTo="body"
+          ></p-datePicker>
+          <div class="form-error" *ngIf="controlInvalid('endDate')">End date is required.</div>
+          <div class="form-error" *ngIf="leaveForm.controls.endDate.hasError('range')">End date must be after start date.</div>
+        </div>
+      </div>
+
+      <div class="leave-form__field">
+        <label for="leaveApprovedBy">Approved by (optional)</label>
+        <p-select
+          inputId="leaveApprovedBy"
+          formControlName="approvedByEmployeeId"
+          [options]="employeeOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [filter]="true"
+          placeholder="Assign approver"
+          appendTo="body"
+          [panelStyleClass]="'leave-select-panel'"
+          showClear
+        ></p-select>
+      </div>
+
+      <div class="leave-form__field">
+        <label for="leaveReason">Reason</label>
+        <textarea
+          id="leaveReason"
+          pTextarea
+          formControlName="reason"
+          rows="4"
+          maxlength="2000"
+          placeholder="Provide context for the leave (optional)"
+          autoResize
+        ></textarea>
+        <small class="field-hint">Optional · Maximum 2,000 characters.</small>
+      </div>
+    </form>
+    <ng-template pTemplate="footer">
+      <div class="leave-form__footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          class="action-button"
+          severity="secondary"
+          (click)="closeFormDialog()"
+          [disabled]="formSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="submit"
+          [label]="formMode() === 'create' ? 'Record leave' : 'Save changes'"
+          severity="primary"
+          [loading]="formSubmitting()"
+          form="leaveForm"
+          class="action-button"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    [visible]="deleteVisible()"
+    [modal]="true"
+    [style]="{ width: '460px' }"
+    [draggable]="false"
+    [closable]="!deleteSubmitting()"
+    (onHide)="closeDeleteDialog()"
+    [dismissableMask]="false"
+    class="delete-dialog"
+    header="Delete leave request"
+  >
+    <div class="delete-dialog__content" *ngIf="selectedLeave() as leave">
+      <p>
+        Are you sure you want to delete the leave request for <strong>{{ leave.employeeName }}</strong>
+        ({{ leave.startDate | date: 'mediumDate' }} → {{ leave.endDate | date: 'mediumDate' }})?
+      </p>
+      <p class="delete-dialog__warning">This action cannot be undone.</p>
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="delete-dialog__footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          class="action-button"
+          severity="secondary"
+          (click)="closeDeleteDialog()"
+          [disabled]="deleteSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Delete"
+          class="action-button"
+          severity="danger"
+          (click)="confirmDelete()"
+          [loading]="deleteSubmitting()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</div>

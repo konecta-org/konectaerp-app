@@ -65,7 +65,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-interview>
-        <tr (click)="viewInterview(interview)" [class.is-selected]="selectedInterview()?.id === interview.id">
+        <tr (click)="viewInterview(interview)" [class.row-selected]="selectedInterview()?.id === interview.id">
           <td>
             <div class="cell-main">
               <span class="cell-main__title">{{ interview.scheduledAt | date: 'MMMM d, y · h:mm a' }}</span>
@@ -90,15 +90,17 @@
               {{ interview.notes || '—' }}
             </span>
           </td>
-          <td class="actions-column">
+          <td class="actions-column table-actions" (click)="$event.stopPropagation()">
             <div class="action-chip-group">
               <button
                 pButton
                 type="button"
                 icon="pi pi-eye"
+                label="View"
+                iconPos="left"
                 class="action-chip"
                 severity="secondary"
-                (click)="viewInterview(interview); $event.stopPropagation()"
+                (click)="viewInterview(interview)"
                 pTooltip="View details"
                 tooltipPosition="bottom"
               ></button>
@@ -106,6 +108,8 @@
                 pButton
                 type="button"
                 icon="pi pi-pencil"
+                label="Edit"
+                iconPos="left"
                 class="action-chip"
                 severity="primary"
                 [ngClass]="actionLockClass(!canManageInterviews())"
@@ -117,6 +121,8 @@
                 pButton
                 type="button"
                 icon="pi pi-trash"
+                label="Delete"
+                iconPos="left"
                 class="action-chip"
                 severity="danger"
                 [ngClass]="actionLockClass(!canDeleteInterviews())"

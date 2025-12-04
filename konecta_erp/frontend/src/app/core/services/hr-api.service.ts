@@ -155,11 +155,29 @@ export interface LeaveRequestDto {
   id: string;
   employeeId: string;
   employeeName: string;
-  leaveType: string;
+  leaveType: string | number;
   startDate: string;
   endDate: string;
-  status: string;
-  createdAt: string;
+  status: string | number;
+  reason?: string | null;
+  approvedByEmployeeId?: string | null;
+  approvedByName?: string | null;
+  requestedAt?: string;
+  updatedAt?: string | null;
+}
+
+export interface CreateLeaveRequestRequest {
+  employeeId: string;
+  leaveType: string | number;
+  startDate: string;
+  endDate: string;
+  reason?: string | null;
+}
+
+export interface UpdateLeaveRequestRequest extends CreateLeaveRequestRequest {
+  id: string;
+  status: string | number;
+  approvedByEmployeeId?: string | null;
 }
 
 export interface JobOpeningDto {
@@ -368,6 +386,18 @@ export class HrApiService {
       pendingOnly: params?.pendingOnly ? 'true' : undefined
     });
     return this.http.get<LeaveRequestDto[]>(`${this.baseUrl}/LeaveRequests`, { params: httpParams });
+  }
+
+  createLeaveRequest(request: CreateLeaveRequestRequest): Observable<LeaveRequestDto> {
+    return this.http.post<LeaveRequestDto>(`${this.baseUrl}/LeaveRequests`, request);
+  }
+
+  updateLeaveRequest(id: string, request: UpdateLeaveRequestRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/LeaveRequests/${id}`, request);
+  }
+
+  deleteLeaveRequest(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/LeaveRequests/${id}`);
   }
 
   getJobOpenings(params?: { departmentId?: string; includeApplications?: boolean }): Observable<JobOpeningDto[]> {

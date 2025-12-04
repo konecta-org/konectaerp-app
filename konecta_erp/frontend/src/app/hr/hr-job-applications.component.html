@@ -69,7 +69,7 @@
               <ng-template pTemplate="body" let-application>
                 <tr
                   (click)="viewApplication(application)"
-                  [class.is-selected]="selectedApplication()?.id === application.id"
+                  [class.row-selected]="selectedApplication()?.id === application.id"
                 >
                   <td>
                     <div class="cell-main">
@@ -111,24 +111,28 @@
                       </small>
                     </div>
                   </td>
-                  <td class="actions-column">
+                  <td class="actions-column table-actions" (click)="$event.stopPropagation()">
                     <div class="action-chip-group">
                       <button
                         pButton
                         type="button"
                         icon="pi pi-eye"
+                        label="View"
+                        iconPos="left"
                         class="action-chip"
                         severity="secondary"
                         pTooltip="View details"
                         tooltipPosition="bottom"
-                        (click)="viewApplication(application); $event.stopPropagation()"
+                        (click)="viewApplication(application)"
                       ></button>
                       <button
                         pButton
                         type="button"
                         icon="pi pi-pencil"
+                        label="Edit"
+                        iconPos="left"
                         class="action-chip"
-                        severity="primary"
+                        severity="info"
                         [ngClass]="actionLockClass(!canManageApplications())"
                         [pTooltip]="tooltipFor('manage', !canManageApplications())"
                         tooltipPosition="bottom"
@@ -138,6 +142,8 @@
                         pButton
                         type="button"
                         icon="pi pi-trash"
+                        label="Delete"
+                        iconPos="left"
                         class="action-chip"
                         severity="danger"
                         [ngClass]="actionLockClass(!canDeleteApplications())"
@@ -170,36 +176,11 @@
                     <h3>{{ application.candidateName }}</h3>
                     <p>{{ jobOpeningLabel(application) }}</p>
                   </div>
-                  <div class="application-details__actions">
-                    <p-tag
-                      [value]="applicationStatusLabel(application.status)"
-                      [severity]="applicationStatusSeverity(application.status)"
-                    ></p-tag>
-                    <div class="application-details__action-buttons">
-                      <button
-                        pButton
-                        type="button"
-                        icon="pi pi-pencil"
-                        class="action-chip"
-                        severity="primary"
-                        [ngClass]="actionLockClass(!canManageApplications())"
-                        [pTooltip]="tooltipFor('manage', !canManageApplications())"
-                        tooltipPosition="bottom"
-                        (click)="openEditDialog(application)"
-                      ></button>
-                      <button
-                        pButton
-                        type="button"
-                        icon="pi pi-trash"
-                        class="action-chip"
-                        severity="danger"
-                        [ngClass]="actionLockClass(!canDeleteApplications())"
-                        [pTooltip]="tooltipFor('delete', !canDeleteApplications())"
-                        tooltipPosition="bottom"
-                        (click)="openDeleteDialog(application)"
-                      ></button>
-                    </div>
-                  </div>
+                  <p-tag
+                    class="application-details__status"
+                    [value]="applicationStatusLabel(application.status)"
+                    [severity]="applicationStatusSeverity(application.status)"
+                  ></p-tag>
                 </header>
 
                 <section class="application-details__section">
@@ -298,6 +279,44 @@
                     </ng-template>
                   </ng-container>
                 </section>
+              </div>
+            </ng-template>
+
+            <ng-template pTemplate="footer">
+              <div class="details__actions">
+                <button
+                  pButton
+                  type="button"
+                  label="Edit"
+                  icon="pi pi-pencil"
+                  severity="primary"
+                  class="action-button"
+                  [ngClass]="actionLockClass(!canManageApplications())"
+                  [pTooltip]="tooltipFor('manage', !canManageApplications())"
+                  tooltipPosition="bottom"
+                  (click)="openEditDialog(application)"
+                ></button>
+                <button
+                  pButton
+                  type="button"
+                  label="Delete"
+                  icon="pi pi-trash"
+                  severity="danger"
+                  class="action-button"
+                  [ngClass]="actionLockClass(!canDeleteApplications())"
+                  [pTooltip]="tooltipFor('delete', !canDeleteApplications())"
+                  tooltipPosition="bottom"
+                  (click)="openDeleteDialog(application)"
+                ></button>
+                <button
+                  pButton
+                  type="button"
+                  label="Close"
+                  icon="pi pi-times"
+                  severity="success"
+                  class="action-button"
+                  (click)="closeDetails()"
+                ></button>
               </div>
             </ng-template>
           </p-card>
@@ -492,32 +511,31 @@
   styleClass="delete-dialog"
   (onHide)="closeDeleteDialog()"
 >
-  <div class="delete-dialog__body">
-    <p>
-      Are you sure you want to delete the application for
-      <strong>{{ selectedApplication()?.candidateName }}</strong>?
-      This action cannot be undone.
-    </p>
+  <div class="dialog-content">
+    Are you sure you want to delete the application for
+    <strong>{{ selectedApplication()?.candidateName }}</strong>? This action cannot be undone.
   </div>
   <ng-template pTemplate="footer">
-    <button
-      pButton
-      type="button"
-      label="Cancel"
-      class="btn-cancel"
-      severity="secondary"
-      (click)="closeDeleteDialog()"
-      [disabled]="deleteSubmitting()"
-    ></button>
-    <button
-      pButton
-      type="button"
-      label="Delete"
-      class="btn-danger"
-      severity="danger"
-      (click)="confirmDelete()"
-      [loading]="deleteSubmitting()"
-      [disabled]="deleteSubmitting()"
-    ></button>
+    <div class="dialog-actions">
+      <button
+        pButton
+        type="button"
+        label="Cancel"
+        class="action-button"
+        severity="secondary"
+        (click)="closeDeleteDialog()"
+        [disabled]="deleteSubmitting()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Delete"
+        class="action-button"
+        severity="danger"
+        (click)="confirmDelete()"
+        [loading]="deleteSubmitting()"
+        [disabled]="deleteSubmitting()"
+      ></button>
+    </div>
   </ng-template>
 </p-dialog>
