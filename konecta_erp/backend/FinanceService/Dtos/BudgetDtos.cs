@@ -2,25 +2,29 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FinanceService.Dtos
 {
-    public record BudgetLineResponseDto(
-        int Id,
-        string Category,
-        decimal AllocatedAmount,
-        decimal SpentAmount,
-        string? Notes);
+    public class BudgetLineResponseDto
+    {
+        public int Id { get; set; }
+        public string Category { get; set; } = default!;
+        public decimal AllocatedAmount { get; set; }
+        public decimal SpentAmount { get; set; }
+        public string? Notes { get; set; }
+    }
 
-    public record BudgetResponseDto(
-        int Id,
-        string Name,
-        string? Department,
-        int FiscalYear,
-        DateTime StartDate,
-        DateTime EndDate,
-        decimal TotalAmount,
-        decimal SpentAmount,
-        string? Notes,
-        decimal RemainingAmount,
-        IEnumerable<BudgetLineResponseDto> Lines);
+    public class BudgetResponseDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = default!;
+        public string? Department { get; set; }
+        public int FiscalYear { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public decimal TotalAmount { get; set; }
+        public decimal SpentAmount { get; set; }
+        public string? Notes { get; set; }
+        public decimal RemainingAmount { get; set; }
+        public IEnumerable<BudgetLineResponseDto> Lines { get; set; } = new List<BudgetLineResponseDto>();
+    }
 
     public class BudgetLineUpsertDto
     {
