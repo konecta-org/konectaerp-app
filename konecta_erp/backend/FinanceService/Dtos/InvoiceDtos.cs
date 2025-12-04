@@ -2,35 +2,31 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FinanceService.Dtos
 {
-    public class InvoiceLineResponseDto
-    {
-        public int Id { get; set; }
-        public string ItemCode { get; set; } = string.Empty;
-        public string Description { get; set; } = default!;
-        public decimal Quantity { get; set; }
-        public decimal UnitPrice { get; set; }
-        public decimal LineTotal { get; set; }
-    }
+    public record InvoiceLineResponseDto(
+        int Id,
+        string ItemCode,
+        string Description,
+        decimal Quantity,
+        decimal UnitPrice,
+        decimal LineTotal);
 
-    public class InvoiceResponseDto
-    {
-        public int Id { get; set; }
-        public string InvoiceNumber { get; set; } = default!;
-        public string CustomerName { get; set; } = default!;
-        public string? CustomerEmail { get; set; }
-        public string? CustomerContact { get; set; }
-        public DateTime IssueDate { get; set; }
-        public DateTime DueDate { get; set; }
-        public string Status { get; set; } = default!;
-        public decimal Subtotal { get; set; }
-        public decimal TaxAmount { get; set; }
-        public decimal TotalAmount { get; set; }
-        public decimal PaidAmount { get; set; }
-        public decimal BalanceDue { get; set; }
-        public string Currency { get; set; } = "USD";
-        public string? Notes { get; set; }
-        public IEnumerable<InvoiceLineResponseDto> Lines { get; set; } = new List<InvoiceLineResponseDto>();
-    }
+    public record InvoiceResponseDto(
+        int Id,
+        string InvoiceNumber,
+        string CustomerName,
+        string? CustomerEmail,
+        string? CustomerContact,
+        DateTime IssueDate,
+        DateTime DueDate,
+        string Status,
+        decimal Subtotal,
+        decimal TaxAmount,
+        decimal TotalAmount,
+        decimal PaidAmount,
+        decimal BalanceDue,
+        string Currency,
+        string? Notes,
+        IEnumerable<InvoiceLineResponseDto> Lines);
 
     public class InvoiceLineUpsertDto
     {

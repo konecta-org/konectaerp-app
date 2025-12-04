@@ -1,0 +1,38 @@
+<section class="inventory-section">
+  <header class="inventory-section__header">
+    <h2>Warehouses</h2>
+    <p>Physical locations that hold stock, with capacity and availability overview.</p>
+  </header>
+
+  <div class="inventory-section__body" *ngIf="!loading(); else warehousesLoading">
+    <table class="inventory-table" *ngIf="warehouses().length; else warehousesEmpty">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Location</th>
+          <th>Status</th>
+          <th>Total on hand</th>
+          <th>Available</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let warehouse of warehouses()">
+          <td>{{ warehouse.code }}</td>
+          <td>{{ warehouse.name }}</td>
+          <td>{{ warehouse.location || '-' }}</td>
+          <td>{{ warehouse.status }}</td>
+          <td>{{ warehouse.totalOnHand | number: '1.0-2' }}</td>
+          <td>{{ warehouse.totalAvailable | number: '1.0-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <ng-template #warehousesEmpty>
+      <p class="inventory-empty">No warehouses configured yet.</p>
+    </ng-template>
+  </div>
+  <ng-template #warehousesLoading>
+    <p class="inventory-loading">Loading warehouses...</p>
+  </ng-template>
+</section>
+

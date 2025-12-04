@@ -79,6 +79,10 @@ export class LandingComponent {
   ];
 
   canAccess(tile: WorkspaceTile): boolean {
+    if (this.auth.hasRole('SystemAdmin')) {
+      return true;
+    }
+
     const hasAnyPermission = tile.permissions?.some(permission => this.auth.hasPermission(permission)) ?? false;
     const hasAnyRole = tile.roles?.some(role => this.auth.hasRole(role)) ?? false;
     const hasAnyPermissionPrefix = tile.permissionPrefixes?.some(prefix => this.auth.hasPermissionPrefix(prefix)) ?? false;

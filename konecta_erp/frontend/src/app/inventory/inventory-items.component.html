@@ -1,0 +1,38 @@
+<section class="inventory-section">
+  <header class="inventory-section__header">
+    <h2>Inventory items</h2>
+    <p>Catalog of stocked items with current quantity on hand and availability.</p>
+  </header>
+
+  <div class="inventory-section__body" *ngIf="!loading(); else itemsLoading">
+    <table class="inventory-table" *ngIf="items().length; else itemsEmpty">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Status</th>
+          <th>Total on hand</th>
+          <th>Available</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of items()">
+          <td>{{ item.sku }}</td>
+          <td>{{ item.name }}</td>
+          <td>{{ item.category || '-' }}</td>
+          <td>{{ item.status }}</td>
+          <td>{{ item.totalOnHand | number: '1.0-2' }}</td>
+          <td>{{ item.totalAvailable | number: '1.0-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <ng-template #itemsEmpty>
+      <p class="inventory-empty">No inventory items found.</p>
+    </ng-template>
+  </div>
+  <ng-template #itemsLoading>
+    <p class="inventory-loading">Loading items...</p>
+  </ng-template>
+</section>
+

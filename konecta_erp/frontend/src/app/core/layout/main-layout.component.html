@@ -4,24 +4,84 @@
       <span class="logo-dot"></span>
       <div>
         <strong>Konecta ERP</strong>
-        <small>Cycle 3</small>
       </div>
     </div>
 
     <nav class="nav-links">
-      <a routerLink="/users" routerLinkActive="active">User Management</a>
-      <a routerLink="/hr/employees" routerLinkActive="active">HR Employees</a>
-      <a routerLink="/workspace/auth-api" routerLinkActive="active">Auth API</a>
-      <a routerLink="/workspace/user-api" routerLinkActive="active">User API</a>
-      <a routerLink="/workspace/hr-api" routerLinkActive="active">HR API</a>
+      <a
+        routerLink="/hr"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }"
+      >
+        Human Resources
+      </a>
+      <a
+        routerLink="/finance"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }"
+      >
+        Finance
+      </a>
+      <a
+        routerLink="/inventory"
+        routerLinkActive="active"
+      >
+        Inventory
+      </a>
+      <a
+        routerLink="/reporting"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }"
+      >
+        Reporting &amp; Analytics
+      </a>
+      <a
+        routerLink="/users"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }"
+      >
+        User Management
+      </a>
     </nav>
 
-    <div class="user-meta" *ngIf="currentUser(); else guest">
-      <div class="user-details">
-        <span class="user-email">{{ currentUser()?.email }}</span>
-        <small class="user-roles">{{ currentUser()?.roles?.join(', ') }}</small>
+    <div class="user-menu" *ngIf="currentUser(); else guest">
+      <button
+        type="button"
+        class="user-menu__trigger"
+        (click)="toggleUserMenu()"
+        aria-label="User menu"
+        aria-haspopup="true"
+        [attr.aria-expanded]="isUserMenuOpen"
+      >
+        <span class="user-menu__avatar">
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-3.33 0-6 2.24-6 5v1h12v-1c0-2.76-2.67-5-6-5z"
+            />
+          </svg>
+        </span>
+      </button>
+
+      <div class="user-menu__dropdown" *ngIf="isUserMenuOpen">
+        <div class="user-menu__info">
+          <div class="user-menu__role">
+            {{ currentUser()?.roles?.[0] || 'User' }}
+          </div>
+          <div class="user-menu__email">
+            {{ currentUser()?.email }}
+          </div>
+        </div>
+        <button
+          type="button"
+          class="user-menu__logout"
+          (click)="logout()"
+        >
+          Logout
+        </button>
       </div>
-      <button type="button" (click)="logout()">Logout</button>
     </div>
     <ng-template #guest>
       <a routerLink="/auth/login">Login</a>

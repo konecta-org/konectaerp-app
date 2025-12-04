@@ -1,0 +1,38 @@
+<section class="inventory-section">
+  <header class="inventory-section__header">
+    <h2>Recent stock movements</h2>
+    <p>Last 25 stock adjustments, receipts, and transfers recorded in the system.</p>
+  </header>
+
+  <div class="inventory-section__body" *ngIf="!loading(); else transactionsLoading">
+    <table class="inventory-table" *ngIf="transactions().length; else transactionsEmpty">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Item</th>
+          <th>Warehouse</th>
+          <th>Type</th>
+          <th>Quantity</th>
+          <th>Reference</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let tx of transactions()">
+          <td>{{ tx.occurredAtUtc | date: 'short' }}</td>
+          <td>{{ tx.itemSku }} — {{ tx.itemName }}</td>
+          <td>{{ tx.warehouseCode }} — {{ tx.warehouseName }}</td>
+          <td>{{ tx.transactionType }}</td>
+          <td>{{ tx.quantity | number: '1.0-2' }}</td>
+          <td>{{ tx.referenceNumber || '-' }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <ng-template #transactionsEmpty>
+      <p class="inventory-empty">No recent stock transactions found.</p>
+    </ng-template>
+  </div>
+  <ng-template #transactionsLoading>
+    <p class="inventory-loading">Loading transactions...</p>
+  </ng-template>
+</section>
+
