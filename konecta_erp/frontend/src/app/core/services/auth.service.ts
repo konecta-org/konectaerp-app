@@ -80,7 +80,7 @@ export class AuthService {
       roles.some(role => this.hasRole(role));
 
     if (roleMatches('SystemAdmin')) {
-      return '/users';
+      return '/landing';
     }
 
     if (roleMatches('FinanceManager', 'FinanceStaff')) {
@@ -168,7 +168,14 @@ export class AuthService {
 
   hasRole(role: string): boolean {
     const session = this.sessionSignal();
-    return !!session?.roles?.some(r => r.toLowerCase() === role.toLowerCase());
+    if (!session?.roles?.length) {
+      return false;
+    }
+
+    const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, '');
+    const target = normalize(role);
+
+    return session.roles.some(r => normalize(r) === target);
   }
 
   private unwrapResponse<T>() {

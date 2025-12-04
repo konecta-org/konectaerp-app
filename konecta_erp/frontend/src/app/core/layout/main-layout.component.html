@@ -8,11 +8,40 @@
     </div>
 
     <nav class="nav-links">
-      <a routerLink="/users" routerLinkActive="active">User Management</a>
-      <a routerLink="/hr/employees" routerLinkActive="active">HR Employees</a>
-      <a routerLink="/workspace/auth-api" routerLinkActive="active">Auth API</a>
-      <a routerLink="/workspace/user-api" routerLinkActive="active">User API</a>
-      <a routerLink="/workspace/hr-api" routerLinkActive="active">HR API</a>
+      <a
+        routerLink="/hr"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }"
+      >
+        Human Resources
+      </a>
+      <a
+        routerLink="/finance"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }"
+      >
+        Finance
+      </a>
+      <a
+        routerLink="/inventory"
+        routerLinkActive="active"
+      >
+        Inventory
+      </a>
+      <a
+        routerLink="/reporting"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }"
+      >
+        Reporting &amp; Analytics
+      </a>
+      <a
+        routerLink="/users"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }"
+      >
+        User Management
+      </a>
     </nav>
 
     <div class="user-menu" *ngIf="currentUser(); else guest">

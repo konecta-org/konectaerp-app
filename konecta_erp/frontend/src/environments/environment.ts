@@ -5,6 +5,7 @@ export const environment = {
     auth: '/auth',
     users: '/users/api',
     hr: '/hr/api',
-    finance: '/finance/api'
+    finance: '/finance/api',
+    inventory: '/inventory/api'
   }
 };

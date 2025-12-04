@@ -22,7 +22,10 @@ const loadFinanceBudgetsComponent = () => import('./finance/finance-budgets.comp
 const loadFinanceExpensesComponent = () => import('./finance/finance-expenses.component').then(m => m.FinanceExpensesComponent);
 const loadFinanceInvoicesComponent = () => import('./finance/finance-invoices.component').then(m => m.FinanceInvoicesComponent);
 const loadFinancePayrollComponent = () => import('./finance/finance-payroll.component').then(m => m.FinancePayrollComponent);
-const loadInventoryComponent = () => import('./inventory/inventory').then(m => m.Inventory);
+const loadInventoryWorkspaceComponent = () => import('./inventory/inventory').then(m => m.Inventory);
+const loadInventoryItemsComponent = () => import('./inventory/inventory-items.component').then(m => m.InventoryItemsComponent);
+const loadInventoryWarehousesComponent = () => import('./inventory/inventory-warehouses.component').then(m => m.InventoryWarehousesComponent);
+const loadInventoryTransactionsComponent = () => import('./inventory/inventory-transactions.component').then(m => m.InventoryTransactionsComponent);
 const loadReportingComponent = () => import('./reporting/reporting').then(m => m.Reporting);
 const loadAuthApiConsoleComponent = () => import('./auth/auth-api-console.component').then(m => m.AuthApiConsoleComponent);
 const loadUserManagementApiConsoleComponent = () => import('./usermanagement/user-management-api-console.component').then(m => m.UserManagementApiConsoleComponent);
@@ -135,7 +138,15 @@ export const routes: Routes = [
           }
         ]
       },
-      { path: 'inventory', loadComponent: loadInventoryComponent },
+      {
+        path: 'inventory',
+        children: [
+          { path: '', loadComponent: loadInventoryWorkspaceComponent },
+          { path: 'items', loadComponent: loadInventoryItemsComponent },
+          { path: 'warehouses', loadComponent: loadInventoryWarehousesComponent },
+          { path: 'transactions', loadComponent: loadInventoryTransactionsComponent }
+        ]
+      },
       { path: 'reporting', loadComponent: loadReportingComponent },
       {
         path: 'workspace',

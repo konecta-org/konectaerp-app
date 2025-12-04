@@ -1,1 +1,62 @@
-<p>inventory works!</p>
+<section class="inventory-workspace">
+  <header class="inventory-header">
+    <div class="inventory-header__title">
+      <h1>Inventory</h1>
+      <p>Monitor stock levels, warehouses, and material movements across your organization.</p>
+    </div>
+
+    <div class="inventory-metrics" *ngIf="summary() as info; else summaryFallback">
+      <div class="metric">
+        <span>{{ info.totalActiveItems }}</span>
+        <small>Active items</small>
+      </div>
+      <div class="metric">
+        <span>{{ info.totalWarehouses }}</span>
+        <small>Warehouses</small>
+      </div>
+      <div class="metric">
+        <span>{{ info.totalQuantityOnHand | number: '1.0-0' }}</span>
+        <small>Total on hand</small>
+      </div>
+      <div class="metric">
+        <span>{{ info.totalQuantityReserved | number: '1.0-0' }}</span>
+        <small>Reserved</small>
+      </div>
+      <div class="metric metric--alert">
+        <span>{{ info.itemsBelowSafetyStock }}</span>
+        <small>Below safety stock</small>
+      </div>
+    </div>
+
+    <ng-template #summaryFallback>
+      <div class="inventory-summary-placeholder" *ngIf="loadingSummary(); else summaryError">
+        Loading inventory overview...
+      </div>
+      <ng-template #summaryError>
+        <div class="inventory-summary-placeholder" *ngIf="loadError()">
+          {{ loadError() }}
+        </div>
+      </ng-template>
+    </ng-template>
+  </header>
+
+  <section class="inventory-grid">
+    <article
+      *ngFor="let tile of tiles"
+      class="inventory-tile"
+      (click)="navigate(tile)"
+      (keyup.enter)="navigate(tile)"
+      role="button"
+      tabindex="0"
+    >
+      <div class="inventory-tile__icon" [style.backgroundImage]="tile.accent">
+        <span>{{ tile.icon }}</span>
+      </div>
+      <div class="inventory-tile__content">
+        <h2>{{ tile.title }}</h2>
+        <p>{{ tile.description }}</p>
+      </div>
+    </article>
+  </section>
+</section>
+
