@@ -123,6 +123,23 @@ export interface DepartmentDto {
   updatedAt?: string;
 }
 
+export interface CreateDepartmentRequest {
+  departmentName: string;
+  description?: string;
+  managerId?: string | null;
+}
+
+export interface UpdateDepartmentRequest {
+  departmentId: string;
+  departmentName: string;
+  description?: string;
+  managerId?: string | null;
+}
+
+export interface AssignDepartmentManagerRequest {
+  employeeId: string;
+}
+
 export interface AttendanceRecordDto {
   id: string;
   employeeId: string;
@@ -240,6 +257,18 @@ export class HrApiService {
 
   getDepartments(): Observable<DepartmentDto[]> {
     return this.http.get<DepartmentDto[]>(`${this.baseUrl}/Department`);
+  }
+
+  createDepartment(request: CreateDepartmentRequest): Observable<DepartmentDto> {
+    return this.http.post<DepartmentDto>(`${this.baseUrl}/Department`, request);
+  }
+
+  updateDepartment(id: string, request: UpdateDepartmentRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/Department/${id}`, request);
+  }
+
+  assignDepartmentManager(id: string, request: AssignDepartmentManagerRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/Department/${id}/manager`, request);
   }
 
   getAttendance(params?: { employeeId?: string; startDate?: string; endDate?: string }): Observable<AttendanceRecordDto[]> {

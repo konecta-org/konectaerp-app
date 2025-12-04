@@ -1,49 +1,354 @@
-<section class="panel">
-  <header class="panel__header">
-    <div>
+<section class="departments">
+  <header class="departments__header">
+    <div class="departments__title">
       <h2>Departments</h2>
-      <p>Explore org units, their managers, and active headcount.</p>
+      <p>Explore business units, their leaders, and active headcount.</p>
     </div>
-    <button type="button" (click)="reload()" [disabled]="loading()">
-      {{ loading() ? 'Refreshing…' : 'Refresh' }}
-    </button>
+    <div class="departments__actions">
+      <button
+        pButton
+        type="button"
+        label="Add department"
+        icon="pi pi-plus"
+        severity="primary"
+        class="action-button"
+        [ngClass]="actionLockClass(!canManageDepartments())"
+        [pTooltip]="tooltipFor('manage', !canManageDepartments())"
+        tooltipPosition="bottom"
+        (click)="openCreateDepartment()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Refresh"
+        icon="pi pi-refresh"
+        severity="secondary"
+        class="action-button"
+        (click)="reload()"
+        [disabled]="loading()"
+        [loading]="loading()"
+      ></button>
+    </div>
   </header>
 
-  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
-    <div class="grid" *ngIf="departments().length > 0; else emptyState">
-      <article class="card" *ngFor="let department of departments(); trackBy: trackByDepartment">
-        <header class="card__header">
-          <h3>{{ department.departmentName }}</h3>
-          <span class="badge">{{ department.employeeCount }} employees</span>
-        </header>
-        <p class="card__manager" *ngIf="department.managerFullName; else noManager">
-          <strong>Manager:</strong> {{ department.managerFullName }}
-        </p>
-        <ng-template #noManager>
-          <p class="card__manager card__manager--empty">No manager assigned</p>
-        </ng-template>
-        <p class="card__description" *ngIf="department.description">{{ department.description }}</p>
+  <p-message
+    *ngIf="feedback()"
+    severity="success"
+    [text]="feedback() ?? ''"
+    [closable]="true"
+    class="departments__message"
+    (onClose)="clearFeedback()"
+  ></p-message>
 
-        <section class="card__employees" *ngIf="department.employees?.length">
-          <h4>Team members</h4>
-          <ul>
-            <li *ngFor="let member of department.employees">
-              <span class="member-name">{{ member.fullName }}</span>
-              <small class="member-role">{{ member.jobTitle || '—' }}</small>
-              <span class="member-status member-status--{{ member.status | lowercase }}">{{ member.status || 'Active' }}</span>
-            </li>
-          </ul>
-        </section>
-      </article>
-    </div>
-  </ng-container>
+  <p-message
+    *ngIf="error()"
+    severity="error"
+    [text]="error() ?? ''"
+    [closable]="true"
+    class="departments__message"
+    (onClose)="error.set(null)"
+  ></p-message>
 
-  <ng-template #stateTemplate>
-    <div class="panel__status" *ngIf="loading()">Loading departments…</div>
-    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  <div class="departments__content" *ngIf="hasDepartments(); else emptyTemplate">
+    <p-table
+      class="departments__table"
+      [value]="departments()"
+      [loading]="loading()"
+      dataKey="departmentId"
+      [rowHover]="true"
+      [responsiveLayout]="'scroll'"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Department</th>
+          <th>Manager</th>
+          <th class="column-center">Headcount</th>
+          <th>Description</th>
+          <th class="column-date">Updated</th>
+          <th class="column-actions">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-department>
+        <tr
+          (click)="viewDepartment(department)"
+          [class.row-selected]="isSelected(department)"
+        >
+          <td>
+            <div class="cell-main">
+              <span class="cell-main__title">{{ department.departmentName }}</span>
+              <small>Created {{ department.createdAt | date: 'mediumDate' }}</small>
+            </div>
+          </td>
+          <td>
+            <span *ngIf="department.managerFullName; else noManager">{{ department.managerFullName }}</span>
+            <ng-template #noManager><span class="placeholder">No manager</span></ng-template>
+          </td>
+          <td class="column-center">
+            <span class="headcount-chip">{{ department.employeeCount }}</span>
+          </td>
+          <td>
+            <span class="description" *ngIf="department.description; else noDescription">
+              {{ department.description }}
+            </span>
+            <ng-template #noDescription><span class="placeholder">No description</span></ng-template>
+          </td>
+          <td class="column-date">
+            <span>{{ department.updatedAt ? (department.updatedAt | date: 'medium') : '—' }}</span>
+          </td>
+          <td class="table-actions" (click)="$event.stopPropagation()">
+            <div class="action-chip-group">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-eye"
+                label="View"
+                severity="secondary"
+                class="action-chip"
+                (click)="viewDepartment(department)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-pencil"
+                label="Edit"
+                severity="info"
+                class="action-chip"
+                [ngClass]="actionLockClass(!canManageDepartments())"
+                [pTooltip]="tooltipFor('manage', !canManageDepartments())"
+                tooltipPosition="bottom"
+                (click)="openEditDepartment(department, $event)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-user-edit"
+                label="Assign"
+                severity="success"
+                class="action-chip"
+                [ngClass]="actionLockClass(!canAssignManagers())"
+                [pTooltip]="tooltipFor('assign', !canAssignManagers())"
+                tooltipPosition="bottom"
+                (click)="openAssignManager(department, $event)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">No departments were returned.</div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <p-card class="departments__details" *ngIf="detailVisible() && selectedDepartment() as department">
+      <ng-template pTemplate="title">{{ department.departmentName }}</ng-template>
+      <ng-template pTemplate="subtitle">
+        {{ department.employeeCount }} {{ department.employeeCount === 1 ? 'member' : 'members' }}
+      </ng-template>
+
+      <ng-template pTemplate="content">
+        <div class="department-details">
+          <section class="department-details__section">
+            <h4 class="department-details__heading">Overview</h4>
+            <dl class="department-details__list">
+              <div class="department-details__row">
+                <dt>Description</dt>
+                <dd>{{ department.description || 'No description provided' }}</dd>
+              </div>
+              <div class="department-details__row">
+                <dt>Manager</dt>
+                <dd>{{ department.managerFullName || 'No manager assigned' }}</dd>
+              </div>
+              <div class="department-details__row">
+                <dt>Headcount</dt>
+                <dd>{{ department.employeeCount }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="department-details__section">
+            <h4 class="department-details__heading">Team members</h4>
+            <div class="department-team" *ngIf="department.employees?.length; else noTeam">
+              <div class="department-team__header">
+                <span>Member</span>
+                <span>Status</span>
+              </div>
+              <div class="department-team__row" *ngFor="let member of department.employees">
+                <span class="department-team__name">{{ member.fullName }}</span>
+                <p-tag
+                  class="department-team__status"
+                  [value]="member.status || 'Active'"
+                  [severity]="employeeStatusSeverity(member.status)"
+                ></p-tag>
+              </div>
+            </div>
+            <ng-template #noTeam>
+              <p class="department-details__placeholder">No employees have been assigned to this department.</p>
+            </ng-template>
+          </section>
+
+          <section class="department-details__section">
+            <h4 class="department-details__heading">Activity</h4>
+            <dl class="department-details__list">
+              <div class="department-details__row">
+                <dt>Created</dt>
+                <dd>{{ department.createdAt | date: 'MMMM d, y, h:mm a' }}</dd>
+              </div>
+              <div class="department-details__row">
+                <dt>Updated</dt>
+                <dd>{{ department.updatedAt ? (department.updatedAt | date: 'MMMM d, y, h:mm a') : 'No updates recorded' }}</dd>
+              </div>
+            </dl>
+          </section>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="footer">
+        <div class="details__actions">
+          <button
+            pButton
+            type="button"
+            label="Edit"
+            icon="pi pi-pencil"
+            severity="info"
+            class="action-button"
+            [ngClass]="actionLockClass(!canManageDepartments())"
+            [pTooltip]="tooltipFor('manage', !canManageDepartments())"
+            tooltipPosition="bottom"
+            (click)="openEditDepartment(department)"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Assign manager"
+            icon="pi pi-user-edit"
+            severity="success"
+            class="action-button"
+            [ngClass]="actionLockClass(!canAssignManagers())"
+            [pTooltip]="tooltipFor('assign', !canAssignManagers())"
+            tooltipPosition="bottom"
+            (click)="openAssignManager(department)"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Close"
+            icon="pi pi-times"
+            severity="secondary"
+            class="action-button"
+            (click)="closeDetails()"
+          ></button>
+        </div>
+      </ng-template>
+    </p-card>
+  </div>
+
+  <ng-template #emptyTemplate>
+    <div class="empty-state" *ngIf="!loading()">No departments were returned.</div>
+    <div class="empty-state" *ngIf="loading()">Loading departments…</div>
   </ng-template>
 
-  <ng-template #emptyState>
-    <div class="panel__status panel__status--muted">No departments were returned.</div>
-  </ng-template>
+  <p-dialog
+    header="{{ formMode() === 'create' ? 'Add department' : 'Edit department' }}"
+    [visible]="formVisible()"
+    [modal]="true"
+    [style]="{ width: '520px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [closeOnEscape]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    (onHide)="closeDepartmentForm()"
+  >
+    <form class="dialog-form p-fluid form-grid" [formGroup]="departmentForm" (ngSubmit)="submitDepartmentForm()" autocomplete="off">
+      <div class="form-field form-field--full">
+        <label for="departmentName">Department name</label>
+        <input pInputText id="departmentName" formControlName="departmentName" />
+        <small *ngIf="departmentControlInvalid('departmentName')">Name is required and must be under 100 characters.</small>
+      </div>
+      <div class="form-field form-field--full">
+        <label for="departmentDescription">Description</label>
+        <textarea pInputTextarea id="departmentDescription" rows="3" formControlName="description"></textarea>
+        <small *ngIf="departmentControlInvalid('description')">Description must be under 500 characters.</small>
+      </div>
+    </form>
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          severity="secondary"
+          class="action-button"
+          (click)="closeDepartmentForm()"
+          [disabled]="formSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          [label]="formMode() === 'create' ? 'Create department' : 'Save changes'"
+          severity="primary"
+          class="action-button"
+          [loading]="formSubmitting()"
+          (click)="submitDepartmentForm()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    header="Assign manager"
+    [visible]="managerDialogVisible()"
+    [modal]="true"
+    [style]="{ width: '420px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [closeOnEscape]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    (onHide)="closeManagerDialog()"
+  >
+    <form class="dialog-form p-fluid form-grid" [formGroup]="managerForm" (ngSubmit)="submitAssignManager()" autocomplete="off">
+      <div class="form-field form-field--full">
+        <label for="managerEmployee">Select manager</label>
+        <p-dropdown
+          inputId="managerEmployee"
+          formControlName="employeeId"
+          [options]="managerOptions()"
+          optionLabel="fullName"
+          optionValue="id"
+          placeholder="Choose an employee"
+          class="full-width"
+        ></p-dropdown>
+        <small *ngIf="managerControlInvalid('employeeId')">Please choose an employee.</small>
+      </div>
+    </form>
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          severity="secondary"
+          class="action-button"
+          (click)="closeManagerDialog()"
+          [disabled]="managerSubmitting()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Assign"
+          severity="success"
+          class="action-button"
+          [loading]="managerSubmitting()"
+          (click)="submitAssignManager()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
 </section>
