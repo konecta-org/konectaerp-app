@@ -46,9 +46,7 @@ export class LandingComponent {
       description: 'Track budgets, expenses, and financial approvals across the organization.',
       route: '/finance',
       icon: 'FN',
-      accent: 'linear-gradient(135deg, #ffc94a, #f97316)',
-      roles: ['FinanceManager', 'FinanceStaff'],
-      permissionPrefixes: ['finance']
+      accent: 'linear-gradient(135deg, #ffc94a, #f97316)'
     },
     {
       key: 'inventory',

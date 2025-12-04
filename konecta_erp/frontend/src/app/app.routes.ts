@@ -17,7 +17,11 @@ const loadHrJobOpeningsComponent = () => import('./hr/hr-job-openings.component'
 const loadHrJobApplicationsComponent = () => import('./hr/hr-job-applications.component').then(m => m.HrJobApplicationsComponent);
 const loadHrInterviewsComponent = () => import('./hr/hr-interviews.component').then(m => m.HrInterviewsComponent);
 const loadHrResignationsComponent = () => import('./hr/hr-resignations.component').then(m => m.HrResignationsComponent);
-const loadFinanceComponent = () => import('./finance/finance').then(m => m.Finance);
+const loadFinanceWorkspaceComponent = () => import('./finance/finance-workspace.component').then(m => m.FinanceWorkspaceComponent);
+const loadFinanceBudgetsComponent = () => import('./finance/finance-budgets.component').then(m => m.FinanceBudgetsComponent);
+const loadFinanceExpensesComponent = () => import('./finance/finance-expenses.component').then(m => m.FinanceExpensesComponent);
+const loadFinanceInvoicesComponent = () => import('./finance/finance-invoices.component').then(m => m.FinanceInvoicesComponent);
+const loadFinancePayrollComponent = () => import('./finance/finance-payroll.component').then(m => m.FinancePayrollComponent);
 const loadInventoryComponent = () => import('./inventory/inventory').then(m => m.Inventory);
 const loadReportingComponent = () => import('./reporting/reporting').then(m => m.Reporting);
 const loadAuthApiConsoleComponent = () => import('./auth/auth-api-console.component').then(m => m.AuthApiConsoleComponent);
@@ -109,7 +113,28 @@ export const routes: Routes = [
           }
         ]
       },
-      { path: 'finance', loadComponent: loadFinanceComponent },
+      {
+        path: 'finance',
+        children: [
+          { path: '', loadComponent: loadFinanceWorkspaceComponent },
+          {
+            path: 'budgets',
+            loadComponent: loadFinanceBudgetsComponent
+          },
+          {
+            path: 'expenses',
+            loadComponent: loadFinanceExpensesComponent
+          },
+          {
+            path: 'invoices',
+            loadComponent: loadFinanceInvoicesComponent
+          },
+          {
+            path: 'payroll',
+            loadComponent: loadFinancePayrollComponent
+          }
+        ]
+      },
       { path: 'inventory', loadComponent: loadInventoryComponent },
       { path: 'reporting', loadComponent: loadReportingComponent },
       {

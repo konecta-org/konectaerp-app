@@ -1,0 +1,249 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>Payroll Runs</h2>
+      <p>Process employee payroll, view payment history and run details.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn-add" (click)="openCreateForm()">+ New Payroll Run</button>
+      <button type="button" (click)="reload()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+  </header>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <table *ngIf="payrollRuns().length > 0; else emptyState">
+      <thead>
+        <tr>
+          <th>Payroll #</th>
+          <th>Period</th>
+          <th>Payment Date</th>
+          <th>Employees</th>
+          <th>Gross Pay</th>
+          <th>Net Pay</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let run of payrollRuns(); trackBy: trackById">
+          <td class="payroll-number">{{ run.payrollNumber }}</td>
+          <td>
+            <div class="period">
+              <span>{{ run.periodStart | date:'mediumDate' }}</span>
+              <span class="period-to">to</span>
+              <span>{{ run.periodEnd | date:'mediumDate' }}</span>
+            </div>
+          </td>
+          <td>{{ run.paymentDate | date:'mediumDate' }}</td>
+          <td class="employee-count">{{ run.entries?.length || 0 }}</td>
+          <td class="amount">{{ formatCurrency(run.totalGrossPay) }}</td>
+          <td class="amount amount--net">{{ formatCurrency(run.totalNetPay) }}</td>
+          <td>
+            <span class="status" [class]="getStatusClass(run.status)">
+              {{ run.status }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="btn-view" (click)="viewDetails(run)">View</button>
+            <button class="btn-edit" (click)="openEditForm(run)">Edit</button>
+            <button class="btn-delete" (click)="confirmDelete(run)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading payroll runs…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="panel__status panel__status--muted">No payroll runs were found.</div>
+  </ng-template>
+</section>
+
+<!-- Payroll Detail Modal -->
+<div class="modal-backdrop" *ngIf="selectedRun()" (click)="closeDetails()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <header class="modal__header">
+      <h3>Payroll {{ selectedRun()!.payrollNumber }}</h3>
+      <button class="modal__close" (click)="closeDetails()">×</button>
+    </header>
+    <div class="modal__body">
+      <div class="payroll-info">
+        <div class="info-row">
+          <span class="label">Period</span>
+          <span>{{ selectedRun()!.periodStart | date:'longDate' }} – {{ selectedRun()!.periodEnd | date:'longDate' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Payment Date</span>
+          <span>{{ selectedRun()!.paymentDate | date:'longDate' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Status</span>
+          <span class="status" [class]="getStatusClass(selectedRun()!.status)">{{ selectedRun()!.status }}</span>
+        </div>
+      </div>
+
+      <div class="payroll-totals">
+        <div class="total-card">
+          <small>Total Gross Pay</small>
+          <span>{{ formatCurrency(selectedRun()!.totalGrossPay) }}</span>
+        </div>
+        <div class="total-card total-card--net">
+          <small>Total Net Pay</small>
+          <span>{{ formatCurrency(selectedRun()!.totalNetPay) }}</span>
+        </div>
+      </div>
+
+      <div class="payroll-entries" *ngIf="selectedRun()!.entries?.length">
+        <h4>Employee Entries</h4>
+        <table class="entries-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Gross Pay</th>
+              <th>Deductions</th>
+              <th>Taxes</th>
+              <th>Net Pay</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let entry of selectedRun()!.entries">
+              <td>
+                <div class="employee-cell">
+                  <span class="employee-name">{{ entry.employeeName }}</span>
+                  <small>{{ entry.employeeId }}</small>
+                </div>
+              </td>
+              <td>{{ formatCurrency(entry.grossPay) }}</td>
+              <td class="deductions">{{ formatCurrency(entry.deductions) }}</td>
+              <td class="taxes">{{ formatCurrency(entry.taxes) }}</td>
+              <td class="net-pay">{{ formatCurrency(entry.netPay) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="payroll-notes" *ngIf="selectedRun()!.notes">
+        <strong>Notes:</strong> {{ selectedRun()!.notes }}
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Payroll Form Modal -->
+<div class="modal-backdrop" *ngIf="formVisible()" (click)="closeForm()">
+  <div class="modal modal--form" (click)="$event.stopPropagation()">
+    <header class="modal__header">
+      <h3>{{ formMode() === 'create' ? 'New Payroll Run' : 'Edit Payroll Run' }}</h3>
+      <button class="modal__close" (click)="closeForm()">×</button>
+    </header>
+    <div class="modal__body">
+      <form [formGroup]="payrollForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="payrollNumber">Payroll Number *</label>
+            <input id="payrollNumber" type="text" formControlName="payrollNumber" placeholder="e.g., PAY-2024-001">
+          </div>
+          <div class="form-group">
+            <label for="status">Status *</label>
+            <select id="status" formControlName="status">
+              <option value="Draft">Draft</option>
+              <option value="Processing">Processing</option>
+              <option value="Completed">Completed</option>
+              <option value="Paid">Paid</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="periodStart">Period Start *</label>
+            <input id="periodStart" type="date" formControlName="periodStart">
+          </div>
+          <div class="form-group">
+            <label for="periodEnd">Period End *</label>
+            <input id="periodEnd" type="date" formControlName="periodEnd">
+          </div>
+          <div class="form-group">
+            <label for="paymentDate">Payment Date *</label>
+            <input id="paymentDate" type="date" formControlName="paymentDate">
+          </div>
+        </div>
+
+        <div class="entries-section">
+          <h4>
+            Employee Entries
+            <button type="button" class="btn-add-entry" (click)="addEntry()">+ Add Employee</button>
+          </h4>
+          
+          <table class="entries-form-table" formArrayName="entries">
+            <thead>
+              <tr>
+                <th>Employee ID</th>
+                <th>Employee Name</th>
+                <th>Gross Pay</th>
+                <th>Deductions</th>
+                <th>Taxes</th>
+                <th>Net Pay</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let entry of entriesArray.controls; let i = index" [formGroupName]="i">
+                <td>
+                  <input type="text" formControlName="employeeId" placeholder="EMP-001">
+                </td>
+                <td>
+                  <input type="text" formControlName="employeeName" placeholder="Employee Name">
+                </td>
+                <td>
+                  <input type="number" formControlName="grossPay" (blur)="calculateEntryNetPay(i)" step="0.01" min="0">
+                </td>
+                <td>
+                  <input type="number" formControlName="deductions" (blur)="calculateEntryNetPay(i)" step="0.01" min="0">
+                </td>
+                <td>
+                  <input type="number" formControlName="taxes" (blur)="calculateEntryNetPay(i)" step="0.01" min="0">
+                </td>
+                <td>
+                  <input type="number" formControlName="netPay" readonly>
+                </td>
+                <td>
+                  <button type="button" class="btn-remove-entry" (click)="removeEntry(i)" [disabled]="entriesArray.length <= 1">×</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="totals-preview">
+            <div class="total-line">
+              <span>Total Gross Pay:</span>
+              <span>{{ formatCurrency(totalGross) }}</span>
+            </div>
+            <div class="total-line total-line--main">
+              <span>Total Net Pay:</span>
+              <span>{{ formatCurrency(totalNet) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="notes">Notes</label>
+          <textarea id="notes" formControlName="notes" rows="3" placeholder="Optional notes about this payroll run"></textarea>
+        </div>
+      </form>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn-cancel" (click)="closeForm()">Cancel</button>
+      <button type="button" class="btn-save" (click)="saveForm()" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : (formMode() === 'create' ? 'Create Payroll' : 'Save Changes') }}
+      </button>
+    </footer>
+  </div>
+</div>

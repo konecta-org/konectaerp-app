@@ -166,55 +166,102 @@
       <ng-template pTemplate="subtitle">{{ employee.position || '—' }}</ng-template>
 
       <ng-template pTemplate="content">
-        <div class="details-grid">
-          <div class="details-grid__item">
-            <span class="details-grid__label">Work email</span>
-            <a [href]="'mailto:' + employee.workEmail">{{ employee.workEmail }}</a>
-          </div>
-          <div class="details-grid__item">
-            <span class="details-grid__label">Personal email</span>
-            <a [href]="'mailto:' + employee.personalEmail">{{ employee.personalEmail }}</a>
-          </div>
-          <div class="details-grid__item">
-            <span class="details-grid__label">Department</span>
-            <span>{{ employee.departmentName || '—' }}</span>
-          </div>
-          <div class="details-grid__item">
-            <span class="details-grid__label">Hire date</span>
-            <span>{{ employee.hireDate | date: 'mediumDate' }}</span>
-          </div>
-          <div class="details-grid__item">
-            <span class="details-grid__label">Status</span>
-            <p-tag [value]="statusLabel(employee.status)" [severity]="statusSeverity(employee.status)"></p-tag>
-          </div>
-          <div class="details-grid__item">
-            <span class="details-grid__label">Salary</span>
-            <span>{{ employee.salary | currency }}</span>
-          </div>
-          <div class="details-grid__item" *ngIf="employee.phoneNumber">
-            <span class="details-grid__label">Phone</span>
-            <a [href]="'tel:' + employee.phoneNumber">{{ employee.phoneNumber }}</a>
-          </div>
-          <div class="details-grid__item">
-            <span class="details-grid__label">Created</span>
-            <span>{{ employee.createdAt | date: 'medium' }}</span>
-          </div>
-          <div class="details-grid__item" *ngIf="employee.updatedAt">
-            <span class="details-grid__label">Updated</span>
-            <span>{{ employee.updatedAt | date: 'medium' }}</span>
-          </div>
-          <div class="details-grid__item" *ngIf="employee.exitDate">
-            <span class="details-grid__label">Exit date</span>
-            <span>{{ employee.exitDate | date: 'mediumDate' }}</span>
-          </div>
-          <div class="details-grid__item" *ngIf="employee.exitReason">
-            <span class="details-grid__label">Exit reason</span>
-            <span>{{ employee.exitReason }}</span>
-          </div>
-          <div class="details-grid__item">
-            <span class="details-grid__label">Eligible for rehire</span>
-            <span>{{ employee.eligibleForRehire === null || employee.eligibleForRehire === undefined ? 'Not recorded' : (employee.eligibleForRehire ? 'Yes' : 'No') }}</span>
-          </div>
+        <div class="employee-details">
+          <section class="employee-details__section">
+            <h4 class="employee-details__heading">Contact</h4>
+            <dl class="employee-details__list">
+              <div class="employee-details__row">
+                <dt>Work email</dt>
+                <dd>
+                  <a class="employee-details__link" [href]="'mailto:' + employee.workEmail">{{ employee.workEmail }}</a>
+                </dd>
+              </div>
+              <div class="employee-details__row">
+                <dt>Personal email</dt>
+                <dd>
+                  <ng-container *ngIf="employee.personalEmail; else noPersonalEmail">
+                    <a class="employee-details__link" [href]="'mailto:' + employee.personalEmail">{{ employee.personalEmail }}</a>
+                  </ng-container>
+                  <ng-template #noPersonalEmail>
+                    <span class="employee-details__placeholder">Not provided</span>
+                  </ng-template>
+                </dd>
+              </div>
+              <div class="employee-details__row">
+                <dt>Phone</dt>
+                <dd>
+                  <ng-container *ngIf="employee.phoneNumber; else noPhone">
+                    <a class="employee-details__link" [href]="'tel:' + employee.phoneNumber">{{ employee.phoneNumber }}</a>
+                  </ng-container>
+                  <ng-template #noPhone>
+                    <span class="employee-details__placeholder">Not provided</span>
+                  </ng-template>
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="employee-details__section">
+            <h4 class="employee-details__heading">Employment</h4>
+            <dl class="employee-details__list">
+              <div class="employee-details__row">
+                <dt>Department</dt>
+                <dd>{{ employee.departmentName || '—' }}</dd>
+              </div>
+              <div class="employee-details__row">
+                <dt>Position</dt>
+                <dd>{{ employee.position || '—' }}</dd>
+              </div>
+              <div class="employee-details__row">
+                <dt>Status</dt>
+                <dd>
+                  <p-tag
+                    class="employee-details__tag"
+                    [value]="statusLabel(employee.status)"
+                    [severity]="statusSeverity(employee.status)"
+                  ></p-tag>
+                </dd>
+              </div>
+              <div class="employee-details__row">
+                <dt>Salary</dt>
+                <dd>{{ employee.salary | currency }}</dd>
+              </div>
+              <div class="employee-details__row">
+                <dt>Hire date</dt>
+                <dd>{{ employee.hireDate | date: 'MMMM d, y' }}</dd>
+              </div>
+              <div class="employee-details__row" *ngIf="employee.exitDate">
+                <dt>Exit date</dt>
+                <dd>{{ employee.exitDate | date: 'MMMM d, y' }}</dd>
+              </div>
+              <div class="employee-details__row" *ngIf="employee.exitReason">
+                <dt>Exit reason</dt>
+                <dd>{{ employee.exitReason }}</dd>
+              </div>
+              <div class="employee-details__row">
+                <dt>Eligible for rehire</dt>
+                <dd>
+                  {{ employee.eligibleForRehire === null || employee.eligibleForRehire === undefined
+                    ? 'Not recorded'
+                    : (employee.eligibleForRehire ? 'Yes' : 'No') }}
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="employee-details__section">
+            <h4 class="employee-details__heading">Activity</h4>
+            <dl class="employee-details__list">
+              <div class="employee-details__row">
+                <dt>Created</dt>
+                <dd>{{ employee.createdAt | date: 'MMMM d, y, h:mm a' }}</dd>
+              </div>
+              <div class="employee-details__row" *ngIf="employee.updatedAt">
+                <dt>Updated</dt>
+                <dd>{{ employee.updatedAt | date: 'MMMM d, y, h:mm a' }}</dd>
+              </div>
+            </dl>
+          </section>
         </div>
       </ng-template>
 

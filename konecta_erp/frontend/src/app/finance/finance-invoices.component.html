@@ -1,0 +1,288 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>Invoices</h2>
+      <p>Manage customer invoices, track payments, and monitor receivables.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn--primary" (click)="openCreateDialog()">
+        + Create Invoice
+      </button>
+      <button type="button" class="btn btn--secondary" (click)="reload()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+  </header>
+
+  <!-- Feedback Message -->
+  <div class="feedback" *ngIf="feedback()">{{ feedback() }}</div>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <table *ngIf="invoices().length > 0; else emptyState">
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Customer</th>
+          <th>Issue Date</th>
+          <th>Due Date</th>
+          <th>Total</th>
+          <th>Paid</th>
+          <th>Balance</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let invoice of invoices(); trackBy: trackById" [class.overdue-row]="isOverdue(invoice)">
+          <td class="invoice-number">{{ invoice.invoiceNumber }}</td>
+          <td>
+            <div class="customer">
+              <span class="customer-name">{{ invoice.customerName }}</span>
+              <small *ngIf="invoice.customerEmail">{{ invoice.customerEmail }}</small>
+            </div>
+          </td>
+          <td>{{ invoice.issueDate | date:'mediumDate' }}</td>
+          <td [class.overdue]="isOverdue(invoice)">{{ invoice.dueDate | date:'mediumDate' }}</td>
+          <td class="amount">{{ formatCurrency(invoice.totalAmount, invoice.currency) }}</td>
+          <td class="amount amount--paid">{{ formatCurrency(invoice.paidAmount, invoice.currency) }}</td>
+          <td class="amount" [class.amount--due]="invoice.balanceDue > 0">
+            {{ formatCurrency(invoice.balanceDue, invoice.currency) }}
+          </td>
+          <td>
+            <span class="status" [class]="getStatusClass(invoice.status)">
+              {{ invoice.status }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="btn btn--xs btn--secondary" (click)="viewDetails(invoice)" title="View">👁</button>
+            <button class="btn btn--xs btn--secondary" (click)="openEditDialog(invoice)" title="Edit">✎</button>
+            <button class="btn btn--xs btn--danger-outline" (click)="openDeleteDialog(invoice)" title="Delete">🗑</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading invoices…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="panel__status panel__status--muted">
+      No invoices were found.
+      <button type="button" class="btn btn--link" (click)="openCreateDialog()">Create your first invoice</button>
+    </div>
+  </ng-template>
+</section>
+
+<!-- Invoice Detail Modal -->
+<div class="modal-backdrop" *ngIf="selectedInvoice()" (click)="closeDetails()">
+  <div class="modal modal--lg" (click)="$event.stopPropagation()">
+    <header class="modal__header">
+      <h3>Invoice {{ selectedInvoice()!.invoiceNumber }}</h3>
+      <button class="modal__close" (click)="closeDetails()">×</button>
+    </header>
+    <div class="modal__body">
+      <div class="invoice-info">
+        <div class="info-row">
+          <span class="label">Customer</span>
+          <span>{{ selectedInvoice()!.customerName }}</span>
+        </div>
+        <div class="info-row" *ngIf="selectedInvoice()!.customerEmail">
+          <span class="label">Email</span>
+          <span>{{ selectedInvoice()!.customerEmail }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Issue Date</span>
+          <span>{{ selectedInvoice()!.issueDate | date:'longDate' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Due Date</span>
+          <span>{{ selectedInvoice()!.dueDate | date:'longDate' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Status</span>
+          <span class="status" [class]="getStatusClass(selectedInvoice()!.status)">{{ selectedInvoice()!.status }}</span>
+        </div>
+      </div>
+
+      <div class="invoice-lines" *ngIf="selectedInvoice()!.lines?.length">
+        <h4>Line Items</h4>
+        <table class="lines-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Description</th>
+              <th>Qty</th>
+              <th>Unit Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let line of selectedInvoice()!.lines">
+              <td>{{ line.itemCode || '—' }}</td>
+              <td>{{ line.description }}</td>
+              <td>{{ line.quantity }}</td>
+              <td>{{ formatCurrency(line.unitPrice, selectedInvoice()!.currency) }}</td>
+              <td>{{ formatCurrency(line.lineTotal, selectedInvoice()!.currency) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="invoice-totals">
+        <div class="total-row">
+          <span>Subtotal</span>
+          <span>{{ formatCurrency(selectedInvoice()!.subtotal, selectedInvoice()!.currency) }}</span>
+        </div>
+        <div class="total-row">
+          <span>Tax</span>
+          <span>{{ formatCurrency(selectedInvoice()!.taxAmount, selectedInvoice()!.currency) }}</span>
+        </div>
+        <div class="total-row total-row--main">
+          <span>Total</span>
+          <span>{{ formatCurrency(selectedInvoice()!.totalAmount, selectedInvoice()!.currency) }}</span>
+        </div>
+        <div class="total-row">
+          <span>Paid</span>
+          <span class="paid">{{ formatCurrency(selectedInvoice()!.paidAmount, selectedInvoice()!.currency) }}</span>
+        </div>
+        <div class="total-row total-row--balance">
+          <span>Balance Due</span>
+          <span>{{ formatCurrency(selectedInvoice()!.balanceDue, selectedInvoice()!.currency) }}</span>
+        </div>
+      </div>
+
+      <p class="invoice-notes" *ngIf="selectedInvoice()!.notes">
+        <strong>Notes:</strong> {{ selectedInvoice()!.notes }}
+      </p>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--danger-outline" (click)="openDeleteDialog(selectedInvoice()!)">Delete</button>
+      <button type="button" class="btn btn--secondary" (click)="openEditDialog(selectedInvoice()!)">Edit</button>
+      <button *ngIf="selectedInvoice()!.status !== 'Paid'" 
+              type="button" class="btn btn--success" 
+              (click)="markAsPaid(selectedInvoice()!)">Mark as Paid</button>
+    </footer>
+  </div>
+</div>
+
+<!-- Create/Edit Invoice Form Modal -->
+<div class="modal-backdrop" *ngIf="formVisible()" (click)="closeDialog()">
+  <div class="modal modal--lg" (click)="$event.stopPropagation()">
+    <header class="modal__header">
+      <h3>{{ formMode() === 'create' ? 'Create Invoice' : 'Edit Invoice' }}</h3>
+      <button class="modal__close" (click)="closeDialog()">×</button>
+    </header>
+    <form [formGroup]="invoiceForm" (ngSubmit)="submitForm()">
+      <div class="modal__body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="invoiceNumber">Invoice Number *</label>
+            <input type="text" id="invoiceNumber" formControlName="invoiceNumber">
+          </div>
+          <div class="form-group">
+            <label for="status">Status *</label>
+            <select id="status" formControlName="status">
+              <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="currency">Currency *</label>
+            <select id="currency" formControlName="currency">
+              <option *ngFor="let c of currencyOptions" [value]="c">{{ c }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="customerName">Customer Name *</label>
+            <input type="text" id="customerName" formControlName="customerName" placeholder="e.g., Acme Corp">
+          </div>
+          <div class="form-group">
+            <label for="customerEmail">Customer Email</label>
+            <input type="email" id="customerEmail" formControlName="customerEmail" placeholder="billing@example.com">
+          </div>
+          <div class="form-group">
+            <label for="customerContact">Contact Person</label>
+            <input type="text" id="customerContact" formControlName="customerContact">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="issueDate">Issue Date *</label>
+            <input type="date" id="issueDate" formControlName="issueDate">
+          </div>
+          <div class="form-group">
+            <label for="dueDate">Due Date *</label>
+            <input type="date" id="dueDate" formControlName="dueDate">
+          </div>
+        </div>
+
+        <!-- Line Items -->
+        <div class="form-section">
+          <div class="form-section__header">
+            <h4>Line Items</h4>
+            <button type="button" class="btn btn--sm btn--secondary" (click)="addLine()">+ Add Line</button>
+          </div>
+          <div formArrayName="lines">
+            <div class="line-row line-row--header">
+              <span>Item Code</span>
+              <span>Description *</span>
+              <span>Qty *</span>
+              <span>Unit Price *</span>
+              <span></span>
+            </div>
+            <div class="line-row" *ngFor="let line of linesFormArray.controls; let i = index" [formGroupName]="i">
+              <input type="text" formControlName="itemCode" placeholder="SKU-001">
+              <input type="text" formControlName="description" placeholder="Description">
+              <input type="number" formControlName="quantity" min="0.01" step="0.01">
+              <input type="number" formControlName="unitPrice" min="0" step="0.01">
+              <button type="button" class="btn btn--sm btn--danger" (click)="removeLine(i)" 
+                      [disabled]="linesFormArray.length === 1">×</button>
+            </div>
+          </div>
+          <div class="calculated-totals">
+            <div><span>Subtotal:</span> <strong>{{ formatCurrency(calculateTotals().subtotal) }}</strong></div>
+            <div><span>Tax (10%):</span> <strong>{{ formatCurrency(calculateTotals().tax) }}</strong></div>
+            <div><span>Total:</span> <strong>{{ formatCurrency(calculateTotals().total) }}</strong></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="notes">Notes</label>
+          <textarea id="notes" formControlName="notes" rows="2" placeholder="Payment terms, thank you message, etc."></textarea>
+        </div>
+      </div>
+      <footer class="modal__footer">
+        <button type="button" class="btn btn--secondary" (click)="closeDialog()">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="formSubmitting()">
+          {{ formSubmitting() ? 'Saving…' : (formMode() === 'create' ? 'Create Invoice' : 'Save Changes') }}
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Confirmation Dialog -->
+<div class="modal-backdrop" *ngIf="deleteDialogVisible()" (click)="closeDeleteDialog()">
+  <div class="modal modal--sm" (click)="$event.stopPropagation()">
+    <header class="modal__header">
+      <h3>Delete Invoice</h3>
+      <button class="modal__close" (click)="closeDeleteDialog()">×</button>
+    </header>
+    <div class="modal__body">
+      <p>Are you sure you want to delete invoice <strong>{{ invoiceToDelete()?.invoiceNumber }}</strong>?</p>
+      <p class="text-muted">This action cannot be undone.</p>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--secondary" (click)="closeDeleteDialog()">Cancel</button>
+      <button type="button" class="btn btn--danger" (click)="confirmDelete()" [disabled]="deleteSubmitting()">
+        {{ deleteSubmitting() ? 'Deleting…' : 'Delete Invoice' }}
+      </button>
+    </footer>
+  </div>
+</div>

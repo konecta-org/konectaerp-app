@@ -1,0 +1,168 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>Expenses</h2>
+      <p>Track and manage company expenses, reimbursements, and payments.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn--primary" (click)="openCreateDialog()">
+        + Add Expense
+      </button>
+      <button type="button" class="btn btn--secondary" (click)="reload()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+  </header>
+
+  <!-- Feedback Message -->
+  <div class="feedback" *ngIf="feedback()">{{ feedback() }}</div>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <table *ngIf="expenses().length > 0; else emptyState">
+      <thead>
+        <tr>
+          <th>Expense #</th>
+          <th>Category</th>
+          <th>Vendor</th>
+          <th>Description</th>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let expense of expenses(); trackBy: trackById">
+          <td class="expense-number">{{ expense.expenseNumber }}</td>
+          <td>{{ expense.category }}</td>
+          <td>{{ expense.vendor || '—' }}</td>
+          <td class="description">{{ expense.description }}</td>
+          <td>{{ expense.incurredOn | date:'mediumDate' }}</td>
+          <td class="amount">{{ formatCurrency(expense.amount) }}</td>
+          <td>
+            <span class="status" [class]="getStatusClass(expense.status)">
+              {{ expense.status }}
+            </span>
+          </td>
+          <td class="actions">
+            <button *ngIf="expense.status === 'Pending'" 
+                    class="btn btn--xs btn--success" 
+                    (click)="approveExpense(expense)"
+                    title="Approve">✓</button>
+            <button *ngIf="expense.status === 'Pending'" 
+                    class="btn btn--xs btn--danger" 
+                    (click)="rejectExpense(expense)"
+                    title="Reject">✗</button>
+            <button class="btn btn--xs btn--secondary" (click)="openEditDialog(expense)" title="Edit">✎</button>
+            <button class="btn btn--xs btn--danger-outline" (click)="openDeleteDialog(expense)" title="Delete">🗑</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading expenses…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="panel__status panel__status--muted">
+      No expenses were found.
+      <button type="button" class="btn btn--link" (click)="openCreateDialog()">Record your first expense</button>
+    </div>
+  </ng-template>
+</section>
+
+<!-- Create/Edit Dialog -->
+<div class="modal-backdrop" *ngIf="formVisible()" (click)="closeDialog()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <header class="modal__header">
+      <h3>{{ formMode() === 'create' ? 'Create Expense' : 'Edit Expense' }}</h3>
+      <button class="modal__close" (click)="closeDialog()">×</button>
+    </header>
+    <form [formGroup]="expenseForm" (ngSubmit)="submitForm()">
+      <div class="modal__body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="expenseNumber">Expense Number *</label>
+            <input type="text" id="expenseNumber" formControlName="expenseNumber">
+          </div>
+          <div class="form-group">
+            <label for="category">Category *</label>
+            <select id="category" formControlName="category">
+              <option value="">Select category...</option>
+              <option *ngFor="let cat of categoryOptions" [value]="cat">{{ cat }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vendor">Vendor</label>
+            <input type="text" id="vendor" formControlName="vendor" placeholder="e.g., Acme Corp">
+          </div>
+          <div class="form-group">
+            <label for="incurredOn">Date *</label>
+            <input type="date" id="incurredOn" formControlName="incurredOn">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description *</label>
+          <textarea id="description" formControlName="description" rows="2" placeholder="Describe the expense..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="amount">Amount *</label>
+            <input type="number" id="amount" formControlName="amount" min="0" step="0.01">
+          </div>
+          <div class="form-group">
+            <label for="paymentMethod">Payment Method *</label>
+            <select id="paymentMethod" formControlName="paymentMethod">
+              <option *ngFor="let method of paymentMethodOptions" [value]="method">{{ method }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="status">Status *</label>
+            <select id="status" formControlName="status">
+              <option *ngFor="let status of statusOptions" [value]="status">{{ status }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="notes">Notes</label>
+          <textarea id="notes" formControlName="notes" rows="2" placeholder="Optional notes..."></textarea>
+        </div>
+      </div>
+      <footer class="modal__footer">
+        <button type="button" class="btn btn--secondary" (click)="closeDialog()">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="formSubmitting()">
+          {{ formSubmitting() ? 'Saving…' : (formMode() === 'create' ? 'Create Expense' : 'Save Changes') }}
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Confirmation Dialog -->
+<div class="modal-backdrop" *ngIf="deleteDialogVisible()" (click)="closeDeleteDialog()">
+  <div class="modal modal--sm" (click)="$event.stopPropagation()">
+    <header class="modal__header">
+      <h3>Delete Expense</h3>
+      <button class="modal__close" (click)="closeDeleteDialog()">×</button>
+    </header>
+    <div class="modal__body">
+      <p>Are you sure you want to delete expense <strong>{{ expenseToDelete()?.expenseNumber }}</strong>?</p>
+      <p class="text-muted">This action cannot be undone.</p>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--secondary" (click)="closeDeleteDialog()">Cancel</button>
+      <button type="button" class="btn btn--danger" (click)="confirmDelete()" [disabled]="deleteSubmitting()">
+        {{ deleteSubmitting() ? 'Deleting…' : 'Delete Expense' }}
+      </button>
+    </footer>
+  </div>
+</div>

@@ -4,6 +4,7 @@ export const environment = {
   endpoints: {
     auth: '/auth',
     users: '/users/api',
-    hr: '/hr/api'
+    hr: '/hr/api',
+    finance: '/finance/api'
   }
 };
