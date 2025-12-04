@@ -1,8 +1,20 @@
 <section class="inventory-section">
   <header class="inventory-section__header">
-    <h2>Warehouses</h2>
-    <p>Physical locations that hold stock, with capacity and availability overview.</p>
+    <div>
+      <h2>Warehouses</h2>
+      <p>Physical locations that hold stock, with capacity and availability overview.</p>
+    </div>
+    <div class="inventory-section__actions">
+      <button type="button" class="btn btn--secondary" (click)="reload()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+      <button type="button" class="btn btn--primary" (click)="openCreate()">
+        + Add warehouse
+      </button>
+    </div>
   </header>
+
+  <p class="inventory-error" *ngIf="error()">{{ error() }}</p>
 
   <div class="inventory-section__body" *ngIf="!loading(); else warehousesLoading">
     <table class="inventory-table" *ngIf="warehouses().length; else warehousesEmpty">
@@ -14,6 +26,7 @@
           <th>Status</th>
           <th>Total on hand</th>
           <th>Available</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -24,6 +37,10 @@
           <td>{{ warehouse.status }}</td>
           <td>{{ warehouse.totalOnHand | number: '1.0-2' }}</td>
           <td>{{ warehouse.totalAvailable | number: '1.0-2' }}</td>
+          <td>
+            <button type="button" class="btn btn--sm" (click)="openEdit(warehouse)">Edit</button>
+            <button type="button" class="btn btn--sm btn--danger" (click)="deleteWarehouse(warehouse)">Delete</button>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -34,5 +51,39 @@
   <ng-template #warehousesLoading>
     <p class="inventory-loading">Loading warehouses...</p>
   </ng-template>
-</section>
 
+  <section class="inventory-form" *ngIf="formVisible()">
+    <h3>{{ formMode() === 'create' ? 'Add warehouse' : 'Edit warehouse' }}</h3>
+    <form [formGroup]="warehouseForm" (ngSubmit)="submitForm()" class="inventory-form__grid">
+      <label>
+        Code
+        <input type="text" formControlName="code" />
+      </label>
+      <label>
+        Name
+        <input type="text" formControlName="name" />
+      </label>
+      <label>
+        Location
+        <input type="text" formControlName="location" />
+      </label>
+      <label>
+        Contact email
+        <input type="email" formControlName="contactEmail" />
+      </label>
+      <label>
+        Status
+        <input type="text" formControlName="status" />
+      </label>
+
+      <div class="inventory-form__actions">
+        <button type="button" class="btn btn--secondary" (click)="closeForm()" [disabled]="saving()">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save warehouse' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</section>

@@ -1,8 +1,20 @@
 <section class="inventory-section">
   <header class="inventory-section__header">
-    <h2>Inventory items</h2>
-    <p>Catalog of stocked items with current quantity on hand and availability.</p>
+    <div>
+      <h2>Inventory items</h2>
+      <p>Catalog of stocked items with current quantity on hand and availability.</p>
+    </div>
+    <div class="inventory-section__actions">
+      <button type="button" class="btn btn--secondary" (click)="reload()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+      <button type="button" class="btn btn--primary" (click)="openCreate()">
+        + Add item
+      </button>
+    </div>
   </header>
+
+  <p class="inventory-error" *ngIf="error()">{{ error() }}</p>
 
   <div class="inventory-section__body" *ngIf="!loading(); else itemsLoading">
     <table class="inventory-table" *ngIf="items().length; else itemsEmpty">
@@ -14,6 +26,7 @@
           <th>Status</th>
           <th>Total on hand</th>
           <th>Available</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -24,6 +37,10 @@
           <td>{{ item.status }}</td>
           <td>{{ item.totalOnHand | number: '1.0-2' }}</td>
           <td>{{ item.totalAvailable | number: '1.0-2' }}</td>
+          <td>
+            <button type="button" class="btn btn--sm" (click)="openEdit(item)">Edit</button>
+            <button type="button" class="btn btn--sm btn--danger" (click)="deleteItem(item)">Delete</button>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -34,5 +51,59 @@
   <ng-template #itemsLoading>
     <p class="inventory-loading">Loading items...</p>
   </ng-template>
-</section>
 
+  <section class="inventory-form" *ngIf="formVisible()">
+    <h3>{{ formMode() === 'create' ? 'Add inventory item' : 'Edit inventory item' }}</h3>
+    <form [formGroup]="itemForm" (ngSubmit)="submitForm()" class="inventory-form__grid">
+      <label>
+        SKU
+        <input type="text" formControlName="sku" />
+      </label>
+      <label>
+        Name
+        <input type="text" formControlName="name" />
+      </label>
+      <label>
+        Category
+        <input type="text" formControlName="category" />
+      </label>
+      <label>
+        Status
+        <input type="text" formControlName="status" />
+      </label>
+      <label>
+        Unit of measure
+        <input type="text" formControlName="unitOfMeasure" />
+      </label>
+      <label>
+        Safety stock level
+        <input type="number" formControlName="safetyStockLevel" />
+      </label>
+      <label>
+        Reorder point
+        <input type="number" formControlName="reorderPoint" />
+      </label>
+      <label>
+        Standard cost
+        <input type="number" step="0.01" formControlName="standardCost" />
+      </label>
+      <label>
+        Unit price
+        <input type="number" step="0.01" formControlName="unitPrice" />
+      </label>
+      <label class="inventory-form__full">
+        Description
+        <textarea rows="2" formControlName="description"></textarea>
+      </label>
+
+      <div class="inventory-form__actions">
+        <button type="button" class="btn btn--secondary" (click)="closeForm()" [disabled]="saving()">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save item' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</section>

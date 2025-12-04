@@ -20,12 +20,28 @@ export class Inventory implements OnInit {
 
   readonly tiles = [
     {
+      key: 'summary',
+      title: 'Inventory summary',
+      description: 'High-level view of items, warehouses, and safety stock alerts.',
+      route: '/inventory',
+      icon: 'IS',
+      accent: 'linear-gradient(135deg, #4f46e5, #6366f1)'
+    },
+    {
       key: 'items',
-      title: 'Items & stock',
+      title: 'Inventory items',
       description: 'Browse catalog items, quantities on hand, and safety stock.',
       route: '/inventory/items',
       icon: 'IT',
       accent: 'linear-gradient(135deg, #22c55e, #16a34a)'
+    },
+    {
+      key: 'operations',
+      title: 'Stock operations',
+      description: 'Review recent stock adjustments, receipts, and transfers.',
+      route: '/inventory/transactions',
+      icon: 'SO',
+      accent: 'linear-gradient(135deg, #f97316, #ea580c)'
     },
     {
       key: 'warehouses',
@@ -34,14 +50,6 @@ export class Inventory implements OnInit {
       route: '/inventory/warehouses',
       icon: 'WH',
       accent: 'linear-gradient(135deg, #0ea5e9, #0369a1)'
-    },
-    {
-      key: 'transactions',
-      title: 'Stock movements',
-      description: 'Track recent stock adjustments, receipts, and transfers.',
-      route: '/inventory/transactions',
-      icon: 'TX',
-      accent: 'linear-gradient(135deg, #f97316, #ea580c)'
     }
   ];
 

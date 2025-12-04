@@ -2,31 +2,35 @@ using System.ComponentModel.DataAnnotations;
 
 namespace InventoryService.Dtos
 {
-    public record StockLevelResponseDto(
-        int WarehouseId,
-        string WarehouseCode,
-        string WarehouseName,
-        decimal QuantityOnHand,
-        decimal QuantityReserved,
-        decimal AvailableQuantity,
-        decimal ReorderQuantity);
+    public class StockLevelResponseDto
+    {
+        public int WarehouseId { get; set; }
+        public string WarehouseCode { get; set; } = string.Empty;
+        public string WarehouseName { get; set; } = string.Empty;
+        public decimal QuantityOnHand { get; set; }
+        public decimal QuantityReserved { get; set; }
+        public decimal AvailableQuantity { get; set; }
+        public decimal ReorderQuantity { get; set; }
+    }
 
-    public record InventoryItemResponseDto(
-        int Id,
-        string Sku,
-        string Name,
-        string? Description,
-        string? Category,
-        string Status,
-        string UnitOfMeasure,
-        int SafetyStockLevel,
-        int ReorderPoint,
-        decimal StandardCost,
-        decimal UnitPrice,
-        decimal TotalOnHand,
-        decimal TotalReserved,
-        decimal TotalAvailable,
-        IEnumerable<StockLevelResponseDto> StockLevels);
+    public class InventoryItemResponseDto
+    {
+        public int Id { get; set; }
+        public string Sku { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? Category { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string UnitOfMeasure { get; set; } = string.Empty;
+        public int SafetyStockLevel { get; set; }
+        public int ReorderPoint { get; set; }
+        public decimal StandardCost { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal TotalOnHand { get; set; }
+        public decimal TotalReserved { get; set; }
+        public decimal TotalAvailable { get; set; }
+        public IEnumerable<StockLevelResponseDto> StockLevels { get; set; } = Array.Empty<StockLevelResponseDto>();
+    }
 
     public class StockLevelUpsertDto
     {

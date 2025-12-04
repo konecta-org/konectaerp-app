@@ -1,8 +1,129 @@
 <section class="inventory-section">
   <header class="inventory-section__header">
-    <h2>Recent stock movements</h2>
-    <p>Last 25 stock adjustments, receipts, and transfers recorded in the system.</p>
+    <div>
+      <h2>Stock operations</h2>
+      <p>Adjust or transfer stock and review the latest movements.</p>
+    </div>
+    <div class="inventory-section__actions">
+      <button type="button" class="btn btn--secondary" (click)="reload()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
   </header>
+
+  <p class="inventory-error" *ngIf="error()">{{ error() }}</p>
+
+  <section class="inventory-form inventory-form--two-column">
+    <div>
+      <h3>Adjust stock</h3>
+      <form [formGroup]="adjustForm" (ngSubmit)="submitAdjust()" class="inventory-form__grid">
+        <label>
+          Item
+          <select formControlName="inventoryItemId">
+            <option [ngValue]="0">Select item</option>
+            <option *ngFor="let item of items()" [ngValue]="item.id">
+              {{ item.sku }} — {{ item.name }}
+            </option>
+          </select>
+        </label>
+        <label>
+          Warehouse
+          <select formControlName="warehouseId">
+            <option [ngValue]="0">Select warehouse</option>
+            <option *ngFor="let w of warehouses()" [ngValue]="w.id">
+              {{ w.code }} — {{ w.name }}
+            </option>
+          </select>
+        </label>
+        <label>
+          Transaction type
+          <select formControlName="transactionType">
+            <option value="">Select type</option>
+            <option *ngFor="let type of transactionTypes()" [value]="type">{{ type }}</option>
+          </select>
+        </label>
+        <label>
+          Increase?
+          <input type="checkbox" formControlName="increase" />
+        </label>
+        <label>
+          Quantity
+          <input type="number" step="0.01" formControlName="quantity" />
+        </label>
+        <label>
+          Reference
+          <input type="text" formControlName="referenceNumber" />
+        </label>
+        <label>
+          Performed by
+          <input type="text" formControlName="performedBy" />
+        </label>
+        <label class="inventory-form__full">
+          Notes
+          <textarea rows="2" formControlName="notes"></textarea>
+        </label>
+        <div class="inventory-form__actions">
+          <button type="submit" class="btn btn--primary" [disabled]="submittingAdjust()">
+            {{ submittingAdjust() ? 'Recording…' : 'Record adjustment' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div>
+      <h3>Transfer stock</h3>
+      <form [formGroup]="transferForm" (ngSubmit)="submitTransfer()" class="inventory-form__grid">
+        <label>
+          Item
+          <select formControlName="inventoryItemId">
+            <option [ngValue]="0">Select item</option>
+            <option *ngFor="let item of items()" [ngValue]="item.id">
+              {{ item.sku }} — {{ item.name }}
+            </option>
+          </select>
+        </label>
+        <label>
+          From warehouse
+          <select formControlName="fromWarehouseId">
+            <option [ngValue]="0">Select warehouse</option>
+            <option *ngFor="let w of warehouses()" [ngValue]="w.id">
+              {{ w.code }} — {{ w.name }}
+            </option>
+          </select>
+        </label>
+        <label>
+          To warehouse
+          <select formControlName="toWarehouseId">
+            <option [ngValue]="0">Select warehouse</option>
+            <option *ngFor="let w of warehouses()" [ngValue]="w.id">
+              {{ w.code }} — {{ w.name }}
+            </option>
+          </select>
+        </label>
+        <label>
+          Quantity
+          <input type="number" step="0.01" formControlName="quantity" />
+        </label>
+        <label>
+          Reference
+          <input type="text" formControlName="referenceNumber" />
+        </label>
+        <label>
+          Performed by
+          <input type="text" formControlName="performedBy" />
+        </label>
+        <label class="inventory-form__full">
+          Notes
+          <textarea rows="2" formControlName="notes"></textarea>
+        </label>
+        <div class="inventory-form__actions">
+          <button type="submit" class="btn btn--primary" [disabled]="submittingTransfer()">
+            {{ submittingTransfer() ? 'Recording…' : 'Record transfer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
 
   <div class="inventory-section__body" *ngIf="!loading(); else transactionsLoading">
     <table class="inventory-table" *ngIf="transactions().length; else transactionsEmpty">
