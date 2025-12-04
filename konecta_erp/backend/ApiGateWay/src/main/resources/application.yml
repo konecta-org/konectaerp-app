@@ -110,7 +110,7 @@ spring:
         - id: inventory-service-direct
           uri: ${upstreams.inventory}
           predicates:
-            - Path=/api/InventoryItems/**,/api/inventoryitems/**,/api/InventorySummary/**,/api/inventorysummary/**,/api/StockOperations/**,/api/stockoperations/**,/api/StockTransactions/**,/api/stocktransactions/**,/api/Warehouses/**,/api/warehouses/**
+            - Path=/api/InventoryItems/**,/api/inventoryitems/**,/api/InventorySummary/**,/api/inventorysummary/**,/api/inventory-summary/**,/api/StockOperations/**,/api/stockoperations/**,/api/stock-operations/**,/api/StockTransactions/**,/api/stocktransactions/**,/api/Warehouses/**,/api/warehouses/**
           filters:
             - name: CircuitBreaker
               args:
