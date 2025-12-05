@@ -2,16 +2,18 @@ using System.ComponentModel.DataAnnotations;
 
 namespace InventoryService.Dtos
 {
-    public record WarehouseResponseDto(
-        int Id,
-        string Code,
-        string Name,
-        string? Location,
-        string? ContactEmail,
-        string Status,
-        decimal TotalOnHand,
-        decimal TotalReserved,
-        decimal TotalAvailable);
+    public class WarehouseResponseDto
+    {
+        public int Id { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string? Location { get; set; }
+        public string? ContactEmail { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public decimal TotalOnHand { get; set; }
+        public decimal TotalReserved { get; set; }
+        public decimal TotalAvailable { get; set; }
+    }
 
     public class WarehouseUpsertDto
     {

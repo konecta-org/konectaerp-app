@@ -2,9 +2,10 @@ FROM maven:3.9.9-eclipse-temurin-17 AS build
 WORKDIR /workspace
 COPY pom.xml .
 COPY src ./src
-ARG MAVEN_CLI_OPTS="-Dmaven.wagon.http.retryHandler.count=5 -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.httpconnectionManager.ttlSeconds=60"
-RUN mvn -B ${MAVEN_CLI_OPTS} -DskipTests dependency:go-offline
-RUN mvn -B ${MAVEN_CLI_OPTS} clean package -DskipTests
+RUN mvn -B clean package -DskipTests
+# ARG MAVEN_CLI_OPTS="-Dmaven.wagon.http.retryHandler.count=5 -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.httpconnectionManager.ttlSeconds=60"
+# RUN mvn -B ${MAVEN_CLI_OPTS} -DskipTests dependency:go-offline
+# RUN mvn -B ${MAVEN_CLI_OPTS} clean package -DskipTests
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app

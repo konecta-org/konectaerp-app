@@ -53,18 +53,20 @@ namespace InventoryService.Dtos
         public string? Notes { get; set; }
     }
 
-    public record StockTransactionResponseDto(
-        int Id,
-        int InventoryItemId,
-        string ItemSku,
-        string ItemName,
-        int WarehouseId,
-        string WarehouseCode,
-        string WarehouseName,
-        decimal Quantity,
-        string TransactionType,
-        string? ReferenceNumber,
-        string? PerformedBy,
-        DateTime OccurredAtUtc,
-        string? Notes);
+    public class StockTransactionResponseDto
+    {
+        public int Id { get; set; }
+        public int InventoryItemId { get; set; }
+        public string ItemSku { get; set; } = string.Empty;
+        public string ItemName { get; set; } = string.Empty;
+        public int WarehouseId { get; set; }
+        public string WarehouseCode { get; set; } = string.Empty;
+        public string WarehouseName { get; set; } = string.Empty;
+        public decimal Quantity { get; set; }
+        public string TransactionType { get; set; } = string.Empty;
+        public string? ReferenceNumber { get; set; }
+        public string? PerformedBy { get; set; }
+        public DateTime OccurredAtUtc { get; set; }
+        public string? Notes { get; set; }
+    }
 }

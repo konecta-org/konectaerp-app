@@ -1,0 +1,34 @@
+<section class="landing">
+  <header class="landing__header">
+    <div>
+      <h1>Welcome{{ session()?.fullName ? ', ' + session()?.fullName : '' }}!</h1>
+      <p>Select a workspace to continue. Your available modules are highlighted below.</p>
+    </div>
+    <div class="landing__badge" *ngIf="session() as current">
+      <span>{{ current.email }}</span>
+      <small>{{ current.roles.join(', ') }}</small>
+    </div>
+  </header>
+
+  <section class="landing__grid">
+    <article
+      *ngFor="let tile of tiles"
+      class="tile"
+      [class.tile--disabled]="!canAccess(tile)"
+      (click)="navigate(tile)"
+      (keyup.enter)="navigate(tile)"
+      tabindex="0"
+      role="button"
+      aria-pressed="false"
+    >
+      <div class="tile__icon" [style.backgroundImage]="tile.accent">
+        <span>{{ tile.icon }}</span>
+      </div>
+      <div class="tile__body">
+        <h2>{{ tile.title }}</h2>
+        <p>{{ tile.description }}</p>
+      </div>
+      <span class="tile__badge" *ngIf="!canAccess(tile)">Request access</span>
+    </article>
+  </section>
+</section>

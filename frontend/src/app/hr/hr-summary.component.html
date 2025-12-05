@@ -1,0 +1,37 @@
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h2>HR Overview</h2>
+      <p>Key indicators across headcount, departmental coverage, and resignation pipeline.</p>
+    </div>
+    <button type="button" (click)="reload()" [disabled]="loading()">
+      {{ loading() ? 'Refreshing…' : 'Refresh' }}
+    </button>
+  </header>
+
+  <ng-container *ngIf="!loading() && !error(); else stateTemplate">
+    <div class="metrics" *ngIf="summary() as data">
+      <article class="metric">
+        <span>{{ data.totalEmployees }}</span>
+        <small>Total employees</small>
+      </article>
+      <article class="metric">
+        <span>{{ data.activeEmployees }}</span>
+        <small>Active employees</small>
+      </article>
+      <article class="metric">
+        <span>{{ data.departments }}</span>
+        <small>Departments</small>
+      </article>
+      <article class="metric metric--alert">
+        <span>{{ data.pendingResignations }}</span>
+        <small>Pending resignations</small>
+      </article>
+    </div>
+  </ng-container>
+
+  <ng-template #stateTemplate>
+    <div class="panel__status" *ngIf="loading()">Loading summary…</div>
+    <div class="panel__status panel__status--error" *ngIf="!loading() && error()">{{ error() }}</div>
+  </ng-template>
+</section>

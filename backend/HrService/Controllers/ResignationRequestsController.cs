@@ -97,6 +97,52 @@ namespace HrService.Controllers
             return Ok(response);
         }
 
+        [HttpPut("{id:guid}")]
+        public async Task<IActionResult> UpdateResignation(Guid id, [FromBody] UpdateResignationRequestDto requestDto)
+        {
+            if (id != requestDto.Id)
+            {
+                return BadRequest("Route id and payload id do not match.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            var resignation = await _resignationRepo.GetByIdAsync(id, includeEmployee: true);
+            if (resignation == null)
+            {
+                return NotFound();
+            }
+
+            if (resignation.Status != ResignationStatus.Pending)
+            {
+                return Conflict("Only pending resignation requests can be updated.");
+            }
+
+            var employee = resignation.Employee ?? await _employeeRepo.GetEmployeeByIdAsync(resignation.EmployeeId, includeDepartment: false);
+            if (employee == null)
+            {
+                return NotFound($"Employee {resignation.EmployeeId} not found.");
+            }
+
+            if (requestDto.EffectiveDate < employee.HireDate)
+            {
+                ModelState.AddModelError(nameof(requestDto.EffectiveDate), "Effective date cannot be earlier than hire date.");
+                return ValidationProblem(ModelState);
+            }
+
+            resignation.EffectiveDate = requestDto.EffectiveDate;
+            resignation.Reason = requestDto.Reason;
+
+            await _resignationRepo.UpdateAsync(resignation);
+            await _resignationRepo.SaveChangesAsync();
+
+            var response = _mapper.Map<ResignationRequestResponseDto>(resignation);
+            return Ok(response);
+        }
+
         [HttpPut("{id:guid}/decision")]
         public async Task<IActionResult> DecideResignation(Guid id, [FromBody] ReviewResignationRequestDto requestDto, CancellationToken cancellationToken)
         {

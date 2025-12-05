@@ -2,16 +2,31 @@ import { Routes } from '@angular/router';
 import { MainLayoutComponent } from './core/layout/main-layout.component';
 import { authGuard } from './core/guards/auth.guard';
 import { permissionGuard } from './core/guards/permission.guard';
-import { AccessDeniedComponent } from './core/pages/access-denied/access-denied.component';
 
 const loadLoginComponent = () => import('./auth/login/login.component').then(m => m.LoginComponent);
 const loadRegisterComponent = () => import('./auth/register/register.component').then(m => m.RegisterComponent);
-const loadDashboardComponent = () => import('./dashboard/dashboard').then(m => m.Dashboard);
+const loadLandingComponent = () => import('./landing/landing.component').then(m => m.LandingComponent);
+const loadHrWorkspaceComponent = () => import('./hr/hr-workspace.component').then(m => m.HrWorkspaceComponent);
+const loadHrSummaryComponent = () => import('./hr/hr-summary.component').then(m => m.HrSummaryComponent);
 const loadUserManagementComponent = () => import('./usermanagement/user-management.component').then(m => m.UserManagementComponent);
-const loadInventoryComponent = () => import('./inventory/inventory').then(m => m.Inventory);
-const loadFinanceComponent = () => import('./finance/finance').then(m => m.Finance);
-const loadReportingComponent = () => import('./reporting/reporting').then(m => m.Reporting);
 const loadHrEmployeesComponent = () => import('./hr/hr-employees.component').then(m => m.HrEmployeesComponent);
+const loadHrAttendanceComponent = () => import('./hr/hr-attendance.component').then(m => m.HrAttendanceComponent);
+const loadHrLeavesComponent = () => import('./hr/hr-leaves.component').then(m => m.HrLeavesComponent);
+const loadHrDepartmentsComponent = () => import('./hr/hr-departments.component').then(m => m.HrDepartmentsComponent);
+const loadHrJobOpeningsComponent = () => import('./hr/hr-job-openings.component').then(m => m.HrJobOpeningsComponent);
+const loadHrJobApplicationsComponent = () => import('./hr/hr-job-applications.component').then(m => m.HrJobApplicationsComponent);
+const loadHrInterviewsComponent = () => import('./hr/hr-interviews.component').then(m => m.HrInterviewsComponent);
+const loadHrResignationsComponent = () => import('./hr/hr-resignations.component').then(m => m.HrResignationsComponent);
+const loadFinanceWorkspaceComponent = () => import('./finance/finance-workspace.component').then(m => m.FinanceWorkspaceComponent);
+const loadFinanceBudgetsComponent = () => import('./finance/finance-budgets.component').then(m => m.FinanceBudgetsComponent);
+const loadFinanceExpensesComponent = () => import('./finance/finance-expenses.component').then(m => m.FinanceExpensesComponent);
+const loadFinanceInvoicesComponent = () => import('./finance/finance-invoices.component').then(m => m.FinanceInvoicesComponent);
+const loadFinancePayrollComponent = () => import('./finance/finance-payroll.component').then(m => m.FinancePayrollComponent);
+const loadInventoryWorkspaceComponent = () => import('./inventory/inventory').then(m => m.Inventory);
+const loadInventoryItemsComponent = () => import('./inventory/inventory-items.component').then(m => m.InventoryItemsComponent);
+const loadInventoryWarehousesComponent = () => import('./inventory/inventory-warehouses.component').then(m => m.InventoryWarehousesComponent);
+const loadInventoryTransactionsComponent = () => import('./inventory/inventory-transactions.component').then(m => m.InventoryTransactionsComponent);
+const loadReportingComponent = () => import('./reporting/reporting').then(m => m.Reporting);
 const loadAuthApiConsoleComponent = () => import('./auth/auth-api-console.component').then(m => m.AuthApiConsoleComponent);
 const loadUserManagementApiConsoleComponent = () => import('./usermanagement/user-management-api-console.component').then(m => m.UserManagementApiConsoleComponent);
 const loadHrApiConsoleComponent = () => import('./hr/hr-api-console.component').then(m => m.HrApiConsoleComponent);
@@ -26,21 +41,13 @@ export const routes: Routes = [
     ]
   },
   {
-    path: 'access-denied',
-    component: AccessDeniedComponent
-  },
-  {
     path: '',
     component: MainLayoutComponent,
     canActivate: [authGuard],
     canActivateChild: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
-      {
-        path: 'dashboard',
-        loadComponent: loadDashboardComponent
-        // No permission guard - accessible to all authenticated users
-      },
+      { path: '', pathMatch: 'full', redirectTo: 'landing' },
+      { path: 'landing', loadComponent: loadLandingComponent },
       {
         path: 'users',
         loadComponent: loadUserManagementComponent,
@@ -48,31 +55,99 @@ export const routes: Routes = [
         data: { permission: 'user-management.users.read' }
       },
       {
-        path: 'inventory',
-        loadComponent: loadInventoryComponent
-        // Removed permission guard for testing
+        path: 'hr',
+        canActivate: [permissionGuard],
+        data: { permissionPrefix: 'hr' },
+        children: [
+          { path: '', loadComponent: loadHrWorkspaceComponent },
+          {
+            path: 'summary',
+            loadComponent: loadHrSummaryComponent,
+            canActivate: [permissionGuard],
+            data: { permission: 'hr.summary.view', permissionPrefix: 'hr' }
+          },
+          {
+            path: 'employees',
+            loadComponent: loadHrEmployeesComponent,
+            canActivate: [permissionGuard],
+            data: { permission: 'hr.employees.read', permissionPrefix: 'hr' }
+          },
+          {
+            path: 'attendance',
+            loadComponent: loadHrAttendanceComponent,
+            canActivate: [permissionGuard],
+            data: { permission: 'hr.attendance.read', permissionPrefix: 'hr' }
+          },
+          {
+            path: 'leaves',
+            loadComponent: loadHrLeavesComponent,
+            canActivate: [permissionGuard],
+            data: { permission: 'hr.leaves.read', permissionPrefix: 'hr' }
+          },
+          {
+            path: 'departments',
+            loadComponent: loadHrDepartmentsComponent,
+            canActivate: [permissionGuard],
+            data: { permission: 'hr.departments.read', permissionPrefix: 'hr' }
+          },
+          {
+            path: 'job-openings',
+            loadComponent: loadHrJobOpeningsComponent,
+            canActivate: [permissionGuard],
+            data: { permission: 'hr.job-openings.read', permissionPrefix: 'hr' }
+          },
+          {
+            path: 'job-applications',
+            loadComponent: loadHrJobApplicationsComponent,
+            canActivate: [permissionGuard],
+            data: { permission: 'hr.job-applications.read', permissionPrefix: 'hr' }
+          },
+          {
+            path: 'interviews',
+            loadComponent: loadHrInterviewsComponent,
+            canActivate: [permissionGuard],
+            data: { permission: 'hr.interviews.read', permissionPrefix: 'hr' }
+          },
+          {
+            path: 'resignations',
+            loadComponent: loadHrResignationsComponent,
+            canActivate: [permissionGuard],
+            data: { permission: 'hr.resignations.read', permissionPrefix: 'hr' }
+          }
+        ]
       },
       {
         path: 'finance',
-        loadComponent: loadFinanceComponent
-        // Removed permission guard for testing
-      },
-      {
-        path: 'reporting',
-        loadComponent: loadReportingComponent
-        // Removed permission guard for testing
-      },
-      {
-        path: 'hr',
         children: [
+          { path: '', loadComponent: loadFinanceWorkspaceComponent },
           {
-            path: 'employees',
-            loadComponent: loadHrEmployeesComponent
-            // Removed permission guard for testing
+            path: 'budgets',
+            loadComponent: loadFinanceBudgetsComponent
           },
-          { path: '', pathMatch: 'full', redirectTo: 'employees' }
+          {
+            path: 'expenses',
+            loadComponent: loadFinanceExpensesComponent
+          },
+          {
+            path: 'invoices',
+            loadComponent: loadFinanceInvoicesComponent
+          },
+          {
+            path: 'payroll',
+            loadComponent: loadFinancePayrollComponent
+          }
         ]
       },
+      {
+        path: 'inventory',
+        children: [
+          { path: '', loadComponent: loadInventoryWorkspaceComponent },
+          { path: 'items', loadComponent: loadInventoryItemsComponent },
+          { path: 'warehouses', loadComponent: loadInventoryWarehousesComponent },
+          { path: 'transactions', loadComponent: loadInventoryTransactionsComponent }
+        ]
+      },
+      { path: 'reporting', loadComponent: loadReportingComponent },
       {
         path: 'workspace',
         children: [

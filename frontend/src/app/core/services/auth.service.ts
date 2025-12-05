@@ -70,6 +70,46 @@ export class AuthService {
     return new Date(session.expiresAtUtc).getTime() > Date.now();
   });
 
+  defaultRoute(): string {
+    const session = this.sessionSignal();
+    if (!session) {
+      return '/landing';
+    }
+
+    const roleMatches = (...roles: string[]) =>
+      roles.some(role => this.hasRole(role));
+
+    if (roleMatches('SystemAdmin')) {
+      return '/landing';
+    }
+
+    if (roleMatches('FinanceManager', 'FinanceStaff')) {
+      return '/finance';
+    }
+
+    if (roleMatches('HrAdmin', 'HrStaff')) {
+      return '/hr';
+    }
+
+    if (roleMatches('DepartmentManager')) {
+      return '/inventory';
+    }
+
+    if (roleMatches('ReportingManager', 'ReportingAnalyst', 'ReportingStaff')) {
+      return '/reporting';
+    }
+
+    if (roleMatches('Employee')) {
+      return '/landing';
+    }
+
+    if (session.permissions?.includes('user-management.users.read')) {
+      return '/users';
+    }
+
+    return '/landing';
+  }
+
   login(request: LoginRequest) {
     const url = `${environment.apiBaseUrl}${environment.endpoints.auth}/login`;
     return this.http.post<ApiResponse<LoginResult>>(url, request)
@@ -112,18 +152,37 @@ export class AuthService {
     return !!session?.permissions?.includes(permission);
   }
 
+  hasPermissionPrefix(prefix: string): boolean {
+    if (!prefix) {
+      return false;
+    }
+
+    const session = this.sessionSignal();
+    const normalizedPrefix = prefix.toLowerCase();
+
+    return !!session?.permissions?.some(permission => {
+      const normalizedPermission = permission.toLowerCase();
+      return normalizedPermission === normalizedPrefix || normalizedPermission.startsWith(`${normalizedPrefix}.`);
+    });
+  }
+
   hasRole(role: string): boolean {
     const session = this.sessionSignal();
-    return !!session?.roles?.some(r => r.toLowerCase() === role.toLowerCase());
+    if (!session?.roles?.length) {
+      return false;
+    }
+
+    const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, '');
+    const target = normalize(role);
+
+    return session.roles.some(r => normalize(r) === target);
   }
 
   private unwrapResponse<T>() {
     return (source: Observable<ApiResponse<T>>) =>
       source.pipe(
         map(response => {
-          console.log('unwrapResponse - raw response:', response);
           const result = response.result ?? (response as any).Result ?? (response as any).data ?? null;
-          console.log('unwrapResponse - extracted result:', result);
           return result as T;
         })
       );
@@ -133,24 +192,15 @@ export class AuthService {
     return (source: Observable<LoginResult>) =>
       source.pipe(
         tap(result => {
-          console.log('Login response received:', result);
-          // Handle both camelCase (frontend expected) and PascalCase (backend default)
-          const r = result as any;
-          const accessToken = r.accessToken || r.AccessToken;
-          const expiresAtUtc = r.expiresAtUtc || r.ExpiresAtUtc;
-          const userId = r.userId || r.UserId;
-          const email = r.email || r.Email;
-          const roles = r.roles || r.Roles || [];
-          const permissions = r.permissions || r.Permissions || [];
-
+          const permissions = result.permissions ?? [];
           const session: AuthSession = {
-            token: accessToken,
-            userId: userId,
-            email: email,
-            roles: roles,
-            permissions: permissions,
-            expiresAtUtc: expiresAtUtc,
-            fullName: this.extractFullName(accessToken)
+            token: result.accessToken,
+            userId: result.userId,
+            email: result.email,
+            roles: result.roles ?? [],
+            permissions,
+            expiresAtUtc: result.expiresAtUtc,
+            fullName: this.extractFullName(result.accessToken)
           };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
           this.sessionSignal.set(session);

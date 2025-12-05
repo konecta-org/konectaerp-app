@@ -1,0 +1,62 @@
+<section class="finance-workspace">
+  <header class="finance-header">
+    <div class="finance-header__title">
+      <h1>Finance</h1>
+      <p>Manage budgets, expenses, invoices, and payroll operations.</p>
+    </div>
+    <div class="finance-metrics" *ngIf="summary() as info; else summaryFallback">
+      <div class="metric">
+        <span>{{ formatCurrency(info.outstandingReceivables) }}</span>
+        <small>Outstanding receivables</small>
+      </div>
+      <div class="metric metric--alert" *ngIf="info.overdueReceivables > 0">
+        <span>{{ formatCurrency(info.overdueReceivables) }}</span>
+        <small>Overdue receivables</small>
+      </div>
+      <div class="metric">
+        <span>{{ formatCurrency(info.currentMonthExpenseTotal) }}</span>
+        <small>Monthly expenses</small>
+      </div>
+      <div class="metric">
+        <span>{{ formatPercent(info.budgetUtilization) }}</span>
+        <small>Budget utilization</small>
+      </div>
+      <div class="metric">
+        <span>{{ formatCurrency(info.upcomingPayrollCommitment) }}</span>
+        <small>Payroll commitment</small>
+      </div>
+    </div>
+    <ng-template #summaryFallback>
+      <div class="finance-summary-placeholder" *ngIf="loading(); else summaryError">
+        Loading overview…
+      </div>
+      <ng-template #summaryError>
+        <div class="finance-summary-placeholder" *ngIf="loadError()">
+          {{ loadError() }}
+        </div>
+      </ng-template>
+    </ng-template>
+  </header>
+
+  <section class="finance-grid">
+    <article
+      *ngFor="let tile of tiles"
+      class="finance-tile"
+      [class.finance-tile--locked]="isLocked(tile)"
+      (click)="navigate(tile)"
+      (keyup.enter)="navigate(tile)"
+      role="button"
+      tabindex="0"
+      [attr.aria-disabled]="isLocked(tile)"
+    >
+      <div class="finance-tile__icon" [style.backgroundImage]="tile.accent">
+        <span>{{ tile.icon }}</span>
+      </div>
+      <div class="finance-tile__content">
+        <h2>{{ tile.title }}</h2>
+        <p>{{ tile.description }}</p>
+      </div>
+      <span class="finance-tile__badge" *ngIf="isLocked(tile)">No access</span>
+    </article>
+  </section>
+</section>
