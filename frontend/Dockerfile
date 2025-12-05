@@ -2,7 +2,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Define build argument for environment type
-ARG ENV_TYPE=production
+# ARG ENV_TYPE=production
 
 COPY package*.json ./
 RUN npm ci

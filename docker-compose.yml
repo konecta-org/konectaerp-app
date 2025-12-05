@@ -72,6 +72,7 @@ services:
       - erp-network
 
   config-server:
+    
     build:
       context: backend/config
       dockerfile: Dockerfile
@@ -124,9 +125,12 @@ services:
     build:
       context: frontend
       dockerfile: Dockerfile
+      args:
+        ENV_TYPE: development
+      tags:
+        - frontend:development
+        - frontend:latest
     container_name: frontend
-    environment:
-      ENV_TYPE: development
     depends_on:
       - api-gateway
     ports:
@@ -138,6 +142,8 @@ services:
     build:
       context: backend/ReportingService
       dockerfile: Dockerfile
+      tags:
+        - reporting-service:latest
     container_name: reporting-service
     environment:
       SPRING_APPLICATION_NAME: reporting-service
@@ -163,6 +169,8 @@ services:
     build:
       context: .
       dockerfile: backend/AuthenticationService/Dockerfile
+      tags:
+        - authentication-service:latest
     container_name: authentication-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
@@ -188,6 +196,8 @@ services:
     build:
       context: .
       dockerfile: backend/HrService/Dockerfile
+      tags:
+        - hr-service:latest
     container_name: hr-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
@@ -211,6 +221,8 @@ services:
     build:
       context: .
       dockerfile: backend/InventoryService/Dockerfile
+      tags:
+        - inventory-service:latest
     container_name: inventory-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
@@ -232,6 +244,8 @@ services:
     build:
       context: .
       dockerfile: backend/FinanceService/Dockerfile
+      tags:
+        - finance-service:latest
     container_name: finance-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
@@ -253,6 +267,8 @@ services:
     build:
       context: .
       dockerfile: backend/UserManagementService/Dockerfile
+      tags:
+        - user-management-service:latest
     container_name: user-management-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
@@ -277,7 +293,7 @@ services:
     container_name: prometheus
     command: ["--config.file=/etc/prometheus/prometheus.yml"]
     ports:
-      - "9090:9090"
+      - "9091:9090"
     volumes:
       - ./prometheus:/etc/prometheus:ro,z
       - prometheus-data:/prometheus
