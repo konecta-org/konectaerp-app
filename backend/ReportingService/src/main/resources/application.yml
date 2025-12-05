@@ -22,13 +22,13 @@ spring:
 services:
   finance:
     # will be @FeignClient(name = "finance-service") for service discovery later
-    url: http://localhost:5003
+    url: http://finance-service:5003
   hr:
     # will be @FeignClient(name = "hr-service") for service discovery later
-    url: http://localhost:5001
+    url: http://hr-service:5001
   inventory:
     # will be @FeignClient(name = "inventory-service") for service discovery later
-    url: http://localhost:5004
+    url: http://inventory-service:5004
 
 feign:
   client:

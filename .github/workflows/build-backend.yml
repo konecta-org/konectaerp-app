@@ -67,6 +67,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # - name: Bump version on main
+      #   id: bump
+      #   if: github.ref == 'refs/heads/main'
+      #   uses: anothrNick/github-tag-action@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     DEFAULT_BUMP: minor
+      #     TAG_PREFIX: "v"
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:

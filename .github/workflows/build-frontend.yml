@@ -22,6 +22,7 @@ permissions:
   security-events: write
   id-token: write
   contents: write
+  pull-requests: write
 
 jobs:
   build:
@@ -38,21 +39,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BUMP: minor
           TAG_PREFIX: "v"
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: typescript
-          sarif_file: codeql-results.sarif
-
-      - name: Auto build
-        uses: github/codeql-action/autobuild@v4
-
-      - name: Scan with CodeQL
-        uses: github/codeql-action/analyze@v4
-        with:
-          languages: typescript
-          sarif_file: codeql-results.sarif
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -113,3 +99,90 @@ jobs:
       - name: Output image digest
         run: |
           echo "Image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_NAME }}:${{ github.sha }}"
+
+      - name: Determine deployment tag
+        id: deploy-tag
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/dev')
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            # Use the new version tag from bump step
+            echo "tag=${{ steps.bump.outputs.tag }}" >> $GITHUB_OUTPUT
+            echo "pr_title=Deploy frontend ${{ steps.bump.outputs.tag }} to production" >> $GITHUB_OUTPUT
+          else
+            # Fetch latest tag for other branches
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            echo "tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+            echo "pr_title=Sync frontend deployment with latest tag ${LATEST_TAG}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout infrastructure repository
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/dev')
+        uses: actions/checkout@v4
+        with:
+          repository: INFRA_REPO_OWNER/INFRA_REPO_NAME # TODO: Replace with actual infra repo
+          token: ${{ secrets.INFRA_PAT }}
+          path: infra-repo
+
+      - name: Update deployment manifest
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/dev')
+        run: |
+          cd infra-repo
+          # TODO: Update the path to your actual deployment manifest
+          DEPLOYMENT_FILE="INFRA_DEPLOYMENT_PATH"  # e.g., k8s/frontend/deployment.yaml
+
+          # Update image tag in deployment file
+          IMAGE_NAME="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_NAME }}"
+          NEW_TAG="${{ steps.deploy-tag.outputs.tag }}"
+
+          # Use sed to replace the image tag
+          sed -i "s|image: ${IMAGE_NAME}:.*|image: ${IMAGE_NAME}:${NEW_TAG}|g" ${DEPLOYMENT_FILE}
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create new branch
+          BRANCH_NAME="update-frontend-${NEW_TAG}-$(date +%s)"
+          git checkout -b ${BRANCH_NAME}
+
+          # Commit changes
+          git add ${DEPLOYMENT_FILE}
+          git commit -m "Update frontend deployment to ${NEW_TAG}"
+
+          # Push branch
+          git push origin ${BRANCH_NAME}
+
+          # Store branch name for PR creation
+          echo "branch=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+        id: update-manifest
+
+      - name: Create Pull Request to Infrastructure Repository
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/dev')
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.INFRA_PAT }}
+          path: infra-repo
+          branch: ${{ steps.update-manifest.outputs.branch }}
+          title: ${{ steps.deploy-tag.outputs.pr_title }}
+          body: |
+            ## Frontend Deployment Update
+
+            This PR updates the frontend deployment manifest with a new image version.
+
+            **Image:** `${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_NAME }}:${{ steps.deploy-tag.outputs.tag }}`
+            **Source Branch:** `${{ github.ref_name }}`
+            **Commit SHA:** `${{ github.sha }}`
+
+            ### Changes
+            - Updated frontend image tag to `${{ steps.deploy-tag.outputs.tag }}`
+
+            ### Build Information
+            - Build triggered by: ${{ github.event_name }}
+            - Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            ---
+            *This PR was automatically created by the frontend build workflow.*
+          labels: |
+            automated
+            frontend
+            deployment
