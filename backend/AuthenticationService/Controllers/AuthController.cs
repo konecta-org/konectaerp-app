@@ -80,12 +80,14 @@ namespace AuthenticationService.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login(LoginRequest request)
         {
-            _logger.LogInformation("Login attempt for email: {Email}", request.Email);
+            // Sanitize user input before logging to prevent log forging
+            var sanitizedEmail = request.Email?.Replace("\r", "").Replace("\n", "");
+            _logger.LogInformation("Login attempt initiated.");
 
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
-                _logger.LogWarning("Login failed: User not found for email: {Email}", request.Email);
+                _logger.LogWarning("Login failed: User not found.");
                 return Unauthorized(new GenericResponse
                 {
                     Result = null,
@@ -98,7 +100,7 @@ namespace AuthenticationService.Controllers
             var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
             if (!result.Succeeded)
             {
-                _logger.LogWarning("Login failed: Password verification failed for email: {Email}", request.Email);
+                _logger.LogWarning("Login failed: Password verification failed for user with attempted email.");
                 return Unauthorized(new GenericResponse
                 {
                     Result = null,
@@ -108,7 +110,7 @@ namespace AuthenticationService.Controllers
                 });
             }
 
-            _logger.LogInformation("User authenticated successfully: {Email}. Retrieving roles...", request.Email);
+            _logger.LogInformation("User authenticated successfully: {UserId}. Retrieving roles...", user.Id);
             var roles = await _userManager.GetRolesAsync(user);
             
             _logger.LogInformation("Retrieving authorization profile for user: {UserId}", user.Id);
@@ -127,7 +129,7 @@ namespace AuthenticationService.Controllers
             _logger.LogInformation("Generating token for user: {UserId} with {RoleCount} roles and {PermissionCount} permissions", user.Id, aggregatedRoles.Count, aggregatedPermissions.Count);
             var token = _jwtService.GenerateToken(user, aggregatedRoles, aggregatedPermissions);
 
-            _logger.LogInformation("Login successful for user: {Email}", request.Email);
+            _logger.LogInformation("Login successful for user: {UserId}", user.Id);
             return Ok(new GenericResponse
             {
                 Result = new
