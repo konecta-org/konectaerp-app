@@ -153,7 +153,7 @@ namespace AuthenticationService.BackgroundServices
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to send credentials email to employee {EmployeeId}. Password is: {Password}", payload.EmployeeId, password);
+                _logger.LogError(ex, "Failed to send credentials email to employee {EmployeeId}.", payload.EmployeeId);
             }
 
             var roles = new[] { "Employee" };
