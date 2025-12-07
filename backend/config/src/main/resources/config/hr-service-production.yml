@@ -1,5 +1,5 @@
 ConnectionStrings:
-  DefaultConnection: ${DB_CONNECTION_STRING:Server=sqlserver,1433;Database=Konecta_HR;User Id=sa;Password=pa55w0rd!;TrustServerCertificate=True;}
+  DefaultConnection: ${DB_CONNECTION_STRING:Server=sqlserver,1433;Database=Konecta_Hr;User Id=sa;Password=pa55w0rd!;TrustServerCertificate=True;}
 
 RabbitMq:
   HostName: ${RABBITMQ_HOST:rabbitmq}

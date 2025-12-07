@@ -21,6 +21,7 @@ on:
       - "backend/UserManagementService/**"
       - "backend/ReportingService/**"
       - .github/workflows/build-backend.yml
+  workflow_dispatch:
 
 env:
   REGISTRY: us-central1-docker.pkg.dev
